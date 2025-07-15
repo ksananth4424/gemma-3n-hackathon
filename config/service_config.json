@@ -1,0 +1,24 @@
+{
+  "service": {
+    "name": "AccessibilityAssistant",
+    "display_name": "Accessibility Assistant Service",
+    "description": "Provides AI-powered content summarization for accessibility",
+    "auto_start": true,
+    "recovery_actions": ["restart", "restart", "none"],
+    "recovery_delay": 60000
+  },
+  "processing": {
+    "max_concurrent_requests": 3,
+    "timeout_seconds": 300,
+    "cache_enabled": true,
+    "cache_size_mb": 500,
+    "max_content_length": 50000
+  },
+  "supported_formats": [
+    ".pdf", ".mp4", ".avi", ".mov", ".mkv", ".wmv", 
+    ".txt", ".docx", ".rtf", ".md"
+  ],
+  "max_file_size_mb": 500,
+  "temp_directory": "%TEMP%\\AccessibilityAssistant",
+  "log_level": "INFO"
+}

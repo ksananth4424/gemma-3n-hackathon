@@ -1,0 +1,36 @@
+{
+  "model": {
+    "name": "gemma3n:e4b",
+    "fallback_model": "gemma3n:e2b",
+    "context_length": 8192,
+    "temperature": 0.3,
+    "max_tokens": 500,
+    "top_p": 0.9,
+    "top_k": 40
+  },
+  "ollama": {
+    "host": "http://localhost:11434",
+    "timeout": 120,
+    "keep_alive": "5m"
+  },
+  "summarization": {
+    "max_key_points": 5,
+    "target_length_words": 150,
+    "include_metadata": true,
+    "adhd_optimized": true,
+    "use_bullet_points": true,
+    "highlight_action_items": true
+  },
+  "prompts": {
+    "system_prompt": "You are an AI assistant specialized in creating accessible content summaries for people with ADHD and other neurodivergent conditions. Always use clear, simple language, structure information logically, highlight key points, keep summaries concise but comprehensive, use bullet points when appropriate, and avoid jargon.",
+    "pdf_prompt_template": "Create an ADHD-friendly summary of this PDF document. Focus on: main topic and purpose, 3-5 key points maximum, clear simple language, actionable information. Content: {content}",
+    "video_prompt_template": "Create an ADHD-friendly summary of this video transcript. Focus on: main topic discussed, key takeaways (3-5 maximum), important timestamps or sections, clear concise language. Transcript: {content}",
+    "text_prompt_template": "Create an ADHD-friendly summary of this text document. Focus on: main ideas, key information (3-5 points), simple clear language, logical structure. Text: {content}"
+  },
+  "performance": {
+    "batch_size": 1,
+    "gpu_enabled": false,
+    "memory_limit_mb": 4096,
+    "parallel_processing": false
+  }
+}
