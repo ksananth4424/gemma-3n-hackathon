@@ -1,24 +1,51 @@
 {
-  "service": {
-    "name": "AccessibilityAssistant",
-    "display_name": "Accessibility Assistant Service",
-    "description": "Provides AI-powered content summarization for accessibility",
-    "auto_start": true,
-    "recovery_actions": ["restart", "restart", "none"],
-    "recovery_delay": 60000
-  },
-  "processing": {
-    "max_concurrent_requests": 3,
+  "ollama": {
+    "base_url": "http://localhost:11434",
     "timeout_seconds": 300,
-    "cache_enabled": true,
-    "cache_size_mb": 500,
-    "max_content_length": 50000
+    "max_concurrent_requests": 3,
+    "health_check_interval_seconds": 30,
+    "models": [
+      {
+        "name": "gemma3n:e2b",
+        "complexity": "simple",
+        "max_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "context_window": 4096,
+        "supports_streaming": true,
+        "supports_vision": false,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "retry_delay_seconds": 1.0,
+        "tokens_per_second": 50.0,
+        "memory_mb": 512
+      },
+      {
+        "name": "gemma3n:e4b",
+        "complexity": "complex",
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "context_window": 8192,
+        "supports_streaming": true,
+        "supports_vision": false,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "retry_delay_seconds": 1.0,
+        "tokens_per_second": 50.0,
+        "memory_mb": 1024
+      }
+    ]
   },
-  "supported_formats": [
-    ".pdf", ".mp4", ".avi", ".mov", ".mkv", ".wmv", 
-    ".txt", ".docx", ".rtf", ".md"
-  ],
-  "max_file_size_mb": 500,
-  "temp_directory": "%TEMP%\\AccessibilityAssistant",
-  "log_level": "INFO"
+  "processing_limits": {
+    "max_file_size_text": 52428800,
+    "max_file_size_pdf": 104857600,
+    "max_file_size_video": 1073741824,
+    "max_content_length": 1000000,
+    "max_summary_length": 10000,
+    "max_processing_time_seconds": 600,
+    "max_concurrent_jobs": 5,
+    "max_retry_attempts": 3,
+    "max_memory_usage_mb": 2048
+  }
 }

@@ -1,230 +1,198 @@
 """
-Main Content Processor for Accessibility Assistant
-Orchestrates content extraction and AI summarization
+Main Content Processor - Orchestrates all content processing with DI
 """
 
+import logging
 import os
 import time
-import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from ..utils.dependency_injection import singleton, injectable
 from ..utils.config_manager import ConfigManager
-from ..utils.logger_setup import get_logger
+from ..service.ollama_service import OllamaService, ContentType
+
+logger = logging.getLogger('accessibility_assistant.content_processor')
 
 
+@singleton
+@injectable  
 class ContentProcessor:
-    """Main content processing orchestrator"""
+    """
+    Main content processor with dependency injection
+    """
     
-    def __init__(self, config: ConfigManager):
-        """
-        Initialize content processor
+    def __init__(self, config_manager: ConfigManager, ollama_service: OllamaService):
+        self.config = config_manager
+        self.ollama_service = ollama_service
         
-        Args:
-            config: Configuration manager instance
-        """
-        self.config = config
-        self.logger = get_logger('accessibility_assistant.processor')
-        
-        # Will be initialized when needed
+        # Lazy loading of processors to avoid circular dependencies
         self._pdf_processor = None
         self._video_processor = None
         self._text_processor = None
-        self._ai_processor = None
         
-        self.supported_extensions = set(config.get_supported_formats())
-        self.max_file_size = config.get_max_file_size_mb() * 1024 * 1024  # Convert to bytes
+        # File type mapping
+        self.processor_mapping = {
+            '.pdf': ContentType.PDF,
+            '.mp4': ContentType.VIDEO,
+            '.avi': ContentType.VIDEO,
+            '.mov': ContentType.VIDEO,
+            '.mkv': ContentType.VIDEO,
+            '.wmv': ContentType.VIDEO,
+            '.txt': ContentType.TEXT,
+            '.md': ContentType.TEXT,
+            '.docx': ContentType.TEXT,
+            '.rtf': ContentType.TEXT
+        }
         
-        self.logger.info("Content processor initialized")
+        logger.info("Content processor initialized with dependency injection")
+    
+    @property
+    def pdf_processor(self):
+        """Lazy load PDF processor"""
+        if self._pdf_processor is None:
+            from .pdf_processor import PDFProcessor
+            self._pdf_processor = PDFProcessor(self.config)
+        return self._pdf_processor
+    
+    @property
+    def video_processor(self):
+        """Lazy load video processor"""
+        if self._video_processor is None:
+            from .video_processor import VideoProcessor
+            self._video_processor = VideoProcessor(self.config)
+        return self._video_processor
+    
+    @property
+    def text_processor(self):
+        """Lazy load text processor"""
+        if self._text_processor is None:
+            from .text_processor import TextProcessor
+            self._text_processor = TextProcessor(self.config)
+        return self._text_processor
     
     def process_file(self, file_path: str) -> Dict[str, Any]:
         """
-        Main file processing entry point
+        Process file and generate accessibility summary
         
         Args:
             file_path: Path to file to process
             
         Returns:
-            Dictionary with processing results
+            Processing result dictionary
         """
         start_time = time.time()
         
         try:
             # Validate file
-            validation_result = self._validate_file(file_path)
-            if not validation_result['valid']:
-                return {
-                    'success': False,
-                    'error': validation_result['error'],
-                    'file_path': file_path
-                }
+            if not self._validate_file(file_path):
+                return self._create_error_result(
+                    file_path, "Invalid file or file not found", start_time
+                )
             
-            # Determine processor type
-            file_extension = Path(file_path).suffix.lower()
-            processor_type = self._get_processor_type(file_extension)
+            # Get processor and content type
+            content_type = self._get_content_type(file_path)
+            if not content_type:
+                return self._create_error_result(
+                    file_path, "Unsupported file type", start_time
+                )
             
-            self.logger.info(f"Processing {file_path} with {processor_type} processor")
+            logger.info(f"Processing {file_path} as {content_type.value}")
             
-            # Extract content (placeholder for now)
-            content = self._extract_content(file_path, processor_type)
+            # Extract content using appropriate processor
+            extracted_content = self._extract_content(file_path, content_type)
             
-            # Generate summary (placeholder for now)
-            summary = self._generate_summary(content, processor_type)
+            if not extracted_content or not extracted_content.strip():
+                return self._create_error_result(
+                    file_path, "No content could be extracted from file", start_time
+                )
             
-            # Format for accessibility
-            formatted_summary = self._format_for_accessibility(summary)
+            logger.debug(f"Extracted {len(extracted_content)} characters of content")
             
+            # Generate AI summary
+            summary = self.ollama_service.generate_summary(
+                extracted_content, content_type
+            )
+            
+            # Create successful result
             processing_time = time.time() - start_time
             
-            return {
+            result = {
                 'success': True,
                 'file_path': file_path,
-                'content_type': processor_type,
-                'summary': formatted_summary,
+                'content_type': content_type.value,
+                'summary': summary,
                 'metadata': {
                     'file_size': os.path.getsize(file_path),
-                    'processing_time': processing_time,
-                    'content_length': len(content) if content else 0
+                    'content_length': len(extracted_content),
+                    'processing_time': processing_time
                 }
             }
             
+            logger.info(f"Successfully processed {file_path} in {processing_time:.2f}s")
+            return result
+            
         except Exception as e:
-            self.logger.error(f"Error processing {file_path}: {e}")
-            return {
-                'success': False,
-                'error': str(e),
-                'file_path': file_path,
+            logger.error(f"Error processing {file_path}: {e}")
+            return self._create_error_result(file_path, str(e), start_time)
+    
+    def _extract_content(self, file_path: str, content_type: ContentType) -> str:
+        """Extract content using appropriate processor"""
+        if content_type == ContentType.PDF:
+            return self.pdf_processor.extract_content(file_path)
+        elif content_type == ContentType.VIDEO:
+            return self.video_processor.extract_content(file_path)
+        elif content_type == ContentType.TEXT:
+            return self.text_processor.extract_content(file_path)
+        else:
+            raise ValueError(f"Unsupported content type: {content_type}")
+    
+    def _validate_file(self, file_path: str) -> bool:
+        """Validate file exists and is accessible"""
+        try:
+            if not os.path.exists(file_path):
+                logger.error(f"File not found: {file_path}")
+                return False
+            
+            if not os.path.isfile(file_path):
+                logger.error(f"Path is not a file: {file_path}")
+                return False
+            
+            file_size = os.path.getsize(file_path)
+            max_size_mb = self.config.get('service', 'max_file_size_mb', 500)
+            max_size_bytes = max_size_mb * 1024 * 1024
+            
+            if file_size > max_size_bytes:
+                logger.error(f"File too large: {file_size} bytes > {max_size_bytes} bytes")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"File validation error: {e}")
+            return False
+    
+    def _get_content_type(self, file_path: str) -> Optional[ContentType]:
+        """Get content type for file"""
+        file_extension = Path(file_path).suffix.lower()
+        return self.processor_mapping.get(file_extension)
+    
+    def _create_error_result(self, file_path: str, error: str, start_time: float) -> Dict[str, Any]:
+        """Create error result dictionary"""
+        return {
+            'success': False,
+            'file_path': file_path,
+            'error': error,
+            'metadata': {
                 'processing_time': time.time() - start_time
             }
+        }
     
-    def _validate_file(self, file_path: str) -> Dict[str, Any]:
-        """
-        Validate file for processing
-        
-        Args:
-            file_path: Path to file
-            
-        Returns:
-            Validation result dictionary
-        """
-        if not os.path.exists(file_path):
-            return {'valid': False, 'error': f"File not found: {file_path}"}
-        
-        if not os.path.isfile(file_path):
-            return {'valid': False, 'error': f"Path is not a file: {file_path}"}
-        
-        file_size = os.path.getsize(file_path)
-        if file_size > self.max_file_size:
-            return {
-                'valid': False, 
-                'error': f"File too large: {file_size / (1024*1024):.1f}MB exceeds limit of {self.max_file_size / (1024*1024)}MB"
-            }
-        
+    def get_supported_formats(self) -> list:
+        """Get list of supported file formats"""
+        return list(self.processor_mapping.keys())
+    
+    def is_supported(self, file_path: str) -> bool:
+        """Check if file type is supported"""
         file_extension = Path(file_path).suffix.lower()
-        if file_extension not in self.supported_extensions:
-            return {
-                'valid': False,
-                'error': f"Unsupported file type: {file_extension}"
-            }
-        
-        return {'valid': True}
-    
-    def _get_processor_type(self, extension: str) -> str:
-        """
-        Map file extension to processor type
-        
-        Args:
-            extension: File extension
-            
-        Returns:
-            Processor type string
-        """
-        video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.wmv'}
-        pdf_extensions = {'.pdf'}
-        text_extensions = {'.txt', '.docx', '.rtf', '.md'}
-        
-        if extension in pdf_extensions:
-            return 'pdf'
-        elif extension in video_extensions:
-            return 'video'
-        elif extension in text_extensions:
-            return 'text'
-        else:
-            return 'text'  # Default to text processor
-    
-    def _extract_content(self, file_path: str, processor_type: str) -> str:
-        """
-        Extract content from file (placeholder implementation)
-        
-        Args:
-            file_path: Path to file
-            processor_type: Type of processor to use
-            
-        Returns:
-            Extracted content as string
-        """
-        # TODO: Implement actual content extraction
-        # For now, return placeholder content
-        self.logger.info(f"Extracting content from {file_path} using {processor_type} processor")
-        
-        if processor_type == 'text':
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    return f.read()
-            except UnicodeDecodeError:
-                with open(file_path, 'r', encoding='latin-1') as f:
-                    return f.read()
-        
-        # Placeholder for PDF and video processing
-
-
-        return f"[Content extracted from {processor_type} file: {Path(file_path).name}]"
-    
-    def _generate_summary(self, content: str, content_type: str) -> str:
-        """
-        Generate AI summary (placeholder implementation)
-        
-        Args:
-            content: Content to summarize
-            content_type: Type of content
-            
-        Returns:
-            Generated summary
-        """
-        
-        # ####################################################################
-        # TODO: Implement actual AI summarization with Ollama/Gemma3n
-        # ####################################################################
-
-        self.logger.info(f"Generating summary for {content_type} content")
-        
-        # Placeholder summary
-        return f"""
-# Summary of {content_type.title()} Content
-
-## Key Points:
-• This is a placeholder summary
-• Content processing is working correctly
-• AI summarization will be implemented next
-• The file was successfully processed
-• Ready for Gemma3n integration
-
-## Overview:
-This content has been processed by the Accessibility Assistant. 
-The actual AI-powered summarization will provide ADHD-friendly 
-summaries using the Gemma3n model.
-        """.strip()
-    
-    def _format_for_accessibility(self, summary: str) -> str:
-        """
-        Format summary for ADHD-friendly presentation
-        
-        Args:
-            summary: Raw summary text
-            
-        Returns:
-            Formatted summary
-        """
-        # Already formatted in placeholder, but this is where we'd
-        # apply ADHD-specific formatting rules
-        return summary
+        return file_extension in self.processor_mapping

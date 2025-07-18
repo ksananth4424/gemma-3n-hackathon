@@ -1,0 +1,105 @@
+{
+  "app_name": "Windows Accessibility Assistant",
+  "version": "1.0.0",
+  "debug_mode": false,
+  "ollama": {
+    "base_url": "http://localhost:11434",
+    "timeout_seconds": 300,
+    "max_concurrent_requests": 3,
+    "models": [
+      {
+        "name": "gemma3n:e2b",
+        "complexity": "simple",
+        "max_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "context_window": 4096,
+        "supports_streaming": true,
+        "supports_vision": false,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "retry_delay_seconds": 1.0,
+        "tokens_per_second": 50.0,
+        "memory_mb": 512
+      },
+      {
+        "name": "gemma3n:e4b",
+        "complexity": "complex",
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "context_window": 8192,
+        "supports_streaming": true,
+        "supports_vision": false,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "retry_delay_seconds": 1.0,
+        "tokens_per_second": 50.0,
+        "memory_mb": 1024
+      }
+    ]
+  },
+  "processing_limits": {
+    "max_file_size_text": 52428800,
+    "max_file_size_pdf": 104857600,
+    "max_file_size_video": 1073741824,
+    "max_content_length": 1000000,
+    "max_summary_length": 10000,
+    "max_processing_time_seconds": 600,
+    "max_concurrent_jobs": 5,
+    "max_retry_attempts": 3,
+    "max_memory_usage_mb": 2048
+  },
+  "adhd_optimization": {
+    "max_bullet_points_per_section": 5,
+    "max_sections": 6,
+    "use_bullet_points": true,
+    "simplify_vocabulary": true,
+    "target_reading_level": 8
+  },
+  "logging": {
+    "level": "INFO",
+    "log_to_file": true,
+    "log_file_path": "logs/accessibility_assistant.log",
+    "max_file_size_mb": 10,
+    "backup_count": 5,
+    "log_to_console": true,
+    "console_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "use_json_format": false,
+    "include_session_id": true,
+    "log_performance_metrics": true,
+    "log_sql_queries": false
+  },
+  "security": {
+    "allowed_file_extensions": [
+      ".txt",
+      ".md",
+      ".pdf",
+      ".docx",
+      ".doc",
+      ".rtf",
+      ".mp4",
+      ".avi",
+      ".mov",
+      ".mkv",
+      ".wmv",
+      ".mp3",
+      ".wav",
+      ".flac",
+      ".aac"
+    ],
+    "blocked_directories": [
+      "C:\\Windows\\System32",
+      "C:\\Program Files",
+      "C:\\Program Files (x86)",
+      "%APPDATA%\\Microsoft"
+    ],
+    "scan_for_malware": false
+  },
+  "temp_directory": "temp",
+  "cache_directory": "cache",
+  "output_directory": "output",
+  "enable_caching": true,
+  "cache_timeout_minutes": 60,
+  "enable_monitoring": true
+}

@@ -1,0 +1,33 @@
+# Ollama Modelfile for Gemma 3N E4B (8B) - For complex content like video/audio
+FROM gemma3n:e4b
+
+# Model parameters optimized for video and audio content processing
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+PARAMETER num_ctx 8192
+PARAMETER num_predict 512
+PARAMETER stop "</s>"
+
+# System template for ADHD-friendly summarization
+TEMPLATE """{{ if .System }}<|start_header_id|>system<|end_header_id|>
+
+{{ .System }}<|eot_id|>{{ end }}{{ if .Prompt }}<|start_header_id|>user<|end_header_id|>
+
+{{ .Prompt }}<|eot_id|>{{ end }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ .Response }}<|eot_id|>"""
+
+# System prompt for accessibility-focused summarization
+SYSTEM """You are an AI assistant specialized in creating accessible content summaries for people with ADHD and other neurodivergent conditions.
+
+Key principles:
+- Use clear, simple language without jargon
+- Structure information with bullet points and headers
+- Limit key points to 3-5 maximum for focus
+- Highlight actionable information prominently  
+- Keep summaries concise but comprehensive
+- Use logical, predictable organization
+- Avoid overwhelming detail
+
+Your goal is to make complex content easily digestible for users who may struggle with attention, information processing, or cognitive overload."""

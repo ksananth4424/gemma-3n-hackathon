@@ -1,26 +1,36 @@
 # Windows Accessibility Assistant
 
-A Windows plugin that provides AI-powered content summarization for neurodivergent users, particularly those with ADHD. The assistant integrates directly into Windows Explorer's context menu, allowing users to quickly generate accessible summaries of PDFs, videos, and text documents using the local Gemma 3n language model.
+A sophisticated Windows plugin that provides AI-powered content summarization for neurodivergent users, particularly those with ADHD. The assistant integrates directly into Windows Explorer's context menu, allowing users to quickly generate accessible summaries of PDFs, videos, and text documents using the local Gemma 3n language model.
 
 ## Key Features
 
-- **ADHD-Friendly Summarization**: Generates clear, concise summaries optimized for neurodivergent users
-- **Windows Explorer Integration**: Right-click context menu for seamless file processing
-- **Privacy-First**: Runs entirely locally using Ollama and Gemma 3n - no data sent to cloud services
-- **Multi-Format Support**: Processes PDFs, videos (MP4, AVI, MOV), and text documents
-- **Offline Capable**: Works without internet connection
-- **Accessibility Focused**: Designed with ADHD-specific UI/UX principles
+- ADHD-Friendly Summarization: Generates clear, concise summaries optimized for neurodivergent users
+- Windows Explorer Integration: Right-click context menu for seamless file processing
+- Privacy-First: Runs entirely locally using Ollama and Gemma 3n - no data sent to cloud services
+- Multi-Format Support: Processes PDFs, videos (MP4, AVI, MOV), and text documents
+- Offline Capable: Works without internet connection
+- Accessibility Focused: Designed with ADHD-specific UI/UX principles
+- Smart Model Selection: Uses optimal model based on content type and complexity
+- Dependency Injection: Efficient resource management and modular architecture
 
 ## Architecture
 
+This application follows a sophisticated multi-layer architecture with dependency injection:
+
 ```
 src/
-├── service/          # Windows service for background processing
-├── shell/            # Windows Explorer context menu integration  
-├── processors/       # Content extraction (PDF, video, text)
-├── ui/              # ADHD-friendly user interfaces
-├── utils/           # Configuration, logging, helpers
-└── models/          # Data models for requests/responses
+├── bootstrap.py         # Dependency injection setup
+├── service/            # Windows service and Ollama integration
+│   └── ollama_service.py   # Smart model selection and AI processing
+├── shell/              # Windows Explorer context menu integration  
+├── processors/         # Content extraction with specialized processors
+│   ├── content_processor.py  # Main orchestrator
+│   ├── pdf_processor.py     # PDF extraction with OCR
+│   ├── video_processor.py   # Video transcription with Whisper
+│   └── text_processor.py    # Text format handling
+├── ui/                # ADHD-friendly user interfaces
+├── utils/             # Configuration, logging, DI container
+└── models/            # Ollama Modelfiles for optimized prompts
 ```
 
 ## Prerequisites
@@ -28,26 +38,119 @@ src/
 - **Windows 10/11** (64-bit)
 - **Python 3.8+**
 - **Ollama** (for running Gemma 3n locally)
-- **Gemma 3n model** (via Ollama)
+- **Gemma 3n models** (gemma3n:e2b and gemma3n:e4b)
 
-## Installation
+## Quick Start
 
 ### 1. Install Ollama
-Download and install Ollama from [ollama.com](https://ollama.com)
+```bash
+# Download from https://ollama.com
+# Or via winget:
+winget install Ollama.Ollama
+```
 
 ### 2. Install Gemma 3n Models
 ```bash
-ollama pull gemma3n:e2b  # 5.6GB model
-ollama pull gemma3n:e4b  # 7.5GB model (recommended)
+ollama pull gemma3n:e2b  # 5.6GB - for text processing
+ollama pull gemma3n:e4b  # 7.5GB - for video/audio processing
 ```
 
-### 3. Clone Repository
+### 3. Clone and Setup
 ```bash
 git clone https://github.com/your-username/gemma-3n-hackathon.git
 cd gemma-3n-hackathon
+pip install -r requirements.txt
 ```
 
-### 4. Install Dependencies
+### 4. Test Installation
+```bash
+python test_setup.py
+```
+
+### 5. Setup Models (First Time)
+```bash
+python main.py --setup-models
+```
+
+## Current Status
+
+ **Backend Complete & Tested**
+- Dependency injection system working
+- Ollama service integration functional
+- Smart model selection operational
+- Text file processing confirmed working
+- ADHD-optimized summarization generating quality output
+- End-to-end pipeline tested successfully
+
+ **Partially Complete**
+- PDF processing (requires PyMuPDF installation)
+- Video processing (requires whisper and ffmpeg)
+
+ **In Development**
+- Windows Explorer context menu integration
+- GUI interface for non-technical users
+
+## Usage
+
+### Command Line Interface
+```bash
+# Process a PDF
+python main.py document.pdf
+
+# Process a video with verbose output
+python main.py video.mp4 --verbose
+
+# Save summary to file
+python main.py document.txt --output summary.txt
+
+# Output as JSON
+python main.py file.pdf --format json
+```
+
+### File Processing Examples
+```bash
+# Text documents
+python main.py "C:\Documents\report.txt"
+python main.py "C:\Documents\article.docx"
+
+# PDF documents  
+python main.py "C:\Documents\research.pdf"
+
+# Video files
+python main.py "C:\Videos\lecture.mp4"
+python main.py "C:\Videos\tutorial.avi"
+```
+
+## Smart Model Selection
+
+The system automatically selects the optimal model based on content type:
+
+- **gemma3n:e4b (7.5GB)**: For complex content (videos, audio, long PDFs)
+- **gemma3n:e2b (5.6GB)**: For text documents and quick processing
+
+## Configuration
+
+Configuration files are located in `config/`:
+
+- `service_config.json`: General service settings
+- `ai_config.json`: AI model and prompt configuration  
+- `logging_config.json`: Logging configuration
+
+### AI Configuration Example
+```json
+{
+  "model": {
+    "name": "gemma3n:e4b",
+    "fallback_model": "gemma3n:e2b",
+    "temperature": 0.3
+  },
+  "summarization": {
+    "max_key_points": 5,
+    "adhd_optimized": true,
+    "use_bullet_points": true
+  }
+}
+```
 ```bash
 pip install -r requirements.txt
 ```
@@ -57,7 +160,7 @@ pip install -r requirements.txt
 python main.py "path/to/test/file.pdf"
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Command Line Usage
 ```bash

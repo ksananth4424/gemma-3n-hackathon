@@ -1,36 +1,16 @@
 {
-  "model": {
-    "name": "gemma3n:e4b",
-    "fallback_model": "gemma3n:e2b",
-    "context_length": 8192,
-    "temperature": 0.3,
-    "max_tokens": 500,
-    "top_p": 0.9,
-    "top_k": 40
-  },
-  "ollama": {
-    "host": "http://localhost:11434",
-    "timeout": 120,
-    "keep_alive": "5m"
-  },
-  "summarization": {
-    "max_key_points": 5,
-    "target_length_words": 150,
-    "include_metadata": true,
-    "adhd_optimized": true,
+  "adhd_optimization": {
+    "max_bullet_points_per_section": 5,
+    "max_sections": 6,
     "use_bullet_points": true,
-    "highlight_action_items": true
+    "simplify_vocabulary": true,
+    "target_reading_level": 8,
+    "include_reading_time": true
   },
-  "prompts": {
-    "system_prompt": "You are an AI assistant specialized in creating accessible content summaries for people with ADHD and other neurodivergent conditions. Always use clear, simple language, structure information logically, highlight key points, keep summaries concise but comprehensive, use bullet points when appropriate, and avoid jargon.",
-    "pdf_prompt_template": "Create an ADHD-friendly summary of this PDF document. Focus on: main topic and purpose, 3-5 key points maximum, clear simple language, actionable information. Content: {content}",
-    "video_prompt_template": "Create an ADHD-friendly summary of this video transcript. Focus on: main topic discussed, key takeaways (3-5 maximum), important timestamps or sections, clear concise language. Transcript: {content}",
-    "text_prompt_template": "Create an ADHD-friendly summary of this text document. Focus on: main ideas, key information (3-5 points), simple clear language, logical structure. Text: {content}"
-  },
-  "performance": {
-    "batch_size": 1,
-    "gpu_enabled": false,
-    "memory_limit_mb": 4096,
-    "parallel_processing": false
+  "model_prompts": {
+    "adhd_summary_prompt": "Create an ADHD-friendly summary that:\n1. Uses clear, simple language (grade 8 reading level)\n2. Organizes information with headers and bullet points\n3. Limits each section to 3-5 key points maximum\n4. Avoids jargon and complex sentences\n5. Highlights the most important takeaways\n6. Uses active voice and concrete examples\n\nFocus on making the content easy to scan and understand for someone with ADHD.",
+    "text_processing_prompt": "Summarize this text content in an accessible, ADHD-friendly format.",
+    "pdf_processing_prompt": "Extract and summarize the key information from this PDF in an ADHD-friendly format.",
+    "video_processing_prompt": "Create an ADHD-friendly summary of this video transcript, focusing on main points and actionable information."
   }
 }
