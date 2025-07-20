@@ -22,7 +22,7 @@ src/
 ├── bootstrap.py         # Dependency injection setup
 ├── service/            # Windows service and Ollama integration
 │   └── ollama_service.py   # Smart model selection and AI processing
-├── shell/              # Windows Explorer context menu integration  
+├── shell/            # Windows Explorer context menu integration  
 ├── processors/         # Content extraction with specialized processors
 │   ├── content_processor.py  # Main orchestrator
 │   ├── pdf_processor.py     # PDF extraction with OCR
@@ -71,6 +71,16 @@ python test_setup.py
 ```bash
 python main.py --setup-models
 ```
+### 6. Generate Executable File
+```bash
+cd ~/gemma-3n-hackathon/src/ui
+pyinstaller --onefile --windowed main.py  #to generate the .exe file
+```
+### 7. Add to Registry
+Go to the .reg file in ```src/shell``` and double click on it. Alternatively, right-click on the file, press "View more options", and click Merge. Approve the necessary permissions
+
+### 8. Test
+Right-click on any file, click "View more options" and click on "Open with ADHD Reader".
 
 ## Current Status
 
