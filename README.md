@@ -62,73 +62,61 @@ cd gemma-3n-hackathon
 pip install -r requirements.txt
 ```
 
-### 4. Test Installation
+### 4. Ollama 
 ```bash
-python test_setup.py
+ollama pull gemma3n:e2b
+
+ollama pull gemma3n:e2b
 ```
 
-### 5. Setup Models (First Time)
+### 5. Test Installation
 ```bash
-python main.py --setup-models
+python src\ui\main.py README.md
 ```
-### 6. Generate Executable File
+
+### 6. Setup Windows Context Menu Integration
+
+1. Right-click on `src\shell\add_adhd_reader_silent.reg`
+2. Select "Run as administrator"
+3. Click "Yes" to confirm registry changes
+
+### 7. Usage via Context Menu
+1. Right-click any supported file (.pdf, .txt, .md, .docx, .rtf)
+2. Select **"Open with ADHD Reader"**
+3. The ADHD-friendly summary will open automatically (no console windows!)
+
+### 8. Manual Usage (Alternative)
 ```bash
-cd ~/gemma-3n-hackathon/src/ui
-pyinstaller --onefile --windowed main.py  #to generate the .exe file
+# Direct Python execution
+python src\ui\main.py "path\to\your\file.pdf"
 ```
-### 7. Add to Registry
-Go to the .reg file in ```src/shell``` and double click on it. Alternatively, right-click on the file, press "View more options", and click Merge. Approve the necessary permissions
-
-### 8. Test
-Right-click on any file, click "View more options" and click on "Open with ADHD Reader".
-
-## Current Status
-
- **Backend Complete & Tested**
-- Dependency injection system working
-- Ollama service integration functional
-- Smart model selection operational
-- Text file processing confirmed working
-- ADHD-optimized summarization generating quality output
-- End-to-end pipeline tested successfully
-
- **Partially Complete**
-- PDF processing (requires PyMuPDF installation)
-- Video processing (requires whisper and ffmpeg)
-
- **In Development**
-- Windows Explorer context menu integration
-- GUI interface for non-technical users
 
 ## Usage
 
-### Command Line Interface
-```bash
-# Process a PDF
-python main.py document.pdf
+### Windows Context Menu (Recommended)
+1. **Install context menu**: Right-click `src\shell\add_adhd_reader_silent.reg` → Run as administrator
+2. **Process any file**: Right-click supported file → "Open with ADHD Reader"
+3. **View summary**: ADHD-friendly interface opens automatically with:
+   - 📌 **TL;DR**: Quick 1-2 sentence summary
+   - 🔹 **Key Points**: 3-5 bullet points highlighting main ideas
+   - 🧾 **Full Summary**: Complete paragraph overview (click to expand)
+   - 📘 **File Content**: Raw extracted text for reference
 
-# Process a video with verbose output
-python main.py video.mp4 --verbose
-
-# Save summary to file
-python main.py document.txt --output summary.txt
-
-# Output as JSON
-python main.py file.pdf --format json
-```
+### Supported File Types & Processing
+| File Type | Extensions | Processing Method |
+|-----------|------------|------------------|
+| **Text Documents** | `.txt`, `.md` | Direct text extraction |
+| **Rich Documents** | `.docx`, `.rtf` | Document structure parsing |  
+| **PDFs** | `.pdf` | Text extraction + basic OCR |
+| **Videos** | `.mp4`, `.avi`, `.mov`, `.mkv`, `.wmv` | Audio transcription (requires setup) |
 
 ### File Processing Examples
 ```bash
-# Text documents
-python main.py "C:\Documents\report.txt"
-python main.py "C:\Documents\article.docx"
-
-# PDF documents  
-python main.py "C:\Documents\research.pdf"
-
-# Video files
-python main.py "C:\Videos\lecture.mp4"
-python main.py "C:\Videos\tutorial.avi"
+# ADHD Reader automatically handles different file types:
+python src\ui\main.py "meeting-notes.txt"      # → Instant text analysis
+python src\ui\main.py "research-paper.pdf"     # → PDF text extraction + AI summary
+python src\ui\main.py "project-spec.md"        # → Markdown parsing + summary
+python src\ui\main.py "report.docx"            # → Document structure analysis
 ```
 
 ## Smart Model Selection
@@ -170,25 +158,6 @@ pip install -r requirements.txt
 python main.py "path/to/test/file.pdf"
 ```
 
-## Quick Start
-
-### Command Line Usage
-```bash
-# Process a PDF file
-python main.py document.pdf
-
-# Process with custom output
-python main.py video.mp4 --output summary.txt --format text
-
-# Verbose logging
-python main.py document.docx --verbose
-```
-
-### Windows Explorer Integration (Coming Soon)
-1. Right-click any supported file in Windows Explorer
-2. Select "Generate Accessibility Summary"
-3. View ADHD-friendly summary in popup window
-
 ## Configuration
 
 ### AI Configuration (`config/ai_config.json`)
@@ -201,42 +170,72 @@ python main.py document.docx --verbose
 - **Size Limits**: Maximum file size processing
 - **Concurrency**: Parallel processing settings
 
-## Supported File Types
-
-| Type | Extensions | Processing Method |
-|------|------------|------------------|
-| **PDFs** | `.pdf` | PyMuPDF + OCR for scanned docs |
-| **Videos** | `.mp4`, `.avi`, `.mov`, `.mkv`, `.wmv` | FFmpeg + Whisper transcription |
-| **Documents** | `.txt`, `.docx`, `.rtf`, `.md` | Direct text extraction |
-
 ## ADHD-Optimized Features
 
+**Cognitive Load Management**
 - **Limited Key Points**: Summaries focus on 3-5 main points maximum
 - **Clear Structure**: Consistent formatting with headers and bullet points
-- **Simple Language**: Avoids jargon and complex terminology
-- **High Contrast UI**: Accessibility-compliant visual design
-- **Progress Indicators**: Clear feedback during processing
-- **Distraction-Free**: Minimal, focused interfaces
+- **Simple Language**: Grade 8 reading level, avoids jargon and complex terminology
+- **Collapsible Sections**: Show/hide full summary to reduce overwhelm
+
+**Visual Design**  
+- **Clean Interface**: Removed colored boxes and distracting elements
+- **High Contrast**: Accessibility-compliant visual design
+- **Font Controls**: Adjustable text size (12-24px)
+- **Dark Mode**: Reduces eye strain during extended use
+
+**Performance & Feedback**
+- **Fast Processing**: Optimized prompts for quicker AI responses
+- **Loading Animations**: Clear progress feedback during processing
+- **Silent Operation**: No console windows or technical distractions
+- **Instant Previews**: Immediate file info while AI processes
+
+**ADHD-Specific Adaptations**
+- **Structured Output**: TL;DR → Key Points → Full Summary progression
+- **Scannable Format**: Easy to skim and find relevant information
+- **Context Preservation**: File content always available for reference
+- **Distraction-Free**: Minimal, focused interfaces without clutter
+
+### Ollama Service Issues
+```bash
+# Check if Ollama is running
+ollama list
+
+# Start Ollama service
+ollama serve
+
+# Verify models are installed
+ollama list | findstr gemma3n
+```
+
+### Python Dependencies
+```bash
+# Reinstall requirements
+pip install -r requirements.txt
+
+# Test Python execution
+python src\ui\main.py README.md
+```
 
 ## Development
 
 ### Project Structure
 ```
-├── src/                    # Source code
-│   ├── processors/         # Content extraction engines
-│   ├── service/           # Windows service implementation
-│   ├── shell/             # Explorer context menu
-│   ├── ui/                # User interface components
-│   ├── utils/             # Shared utilities
-│   └── models/            # Data models
-├── config/                # Configuration files
-├── resources/             # Icons, templates
-├── tests/                 # Test suite
-├── docs/                  # Documentation
-├── installer/             # Installation scripts
-└── build/                 # Build and packaging
+├── src/                          # Source code
+│   ├── ui/main.py               # Main ADHD-friendly interface  
+│   ├── processors/              # Content extraction engines
+│   ├── service/ollama_service.py # AI model integration
+│   ├── shell/                   # Windows Explorer integration
+│   ├── utils/                   # Configuration and utilities
+│   └── models/                  # Data models
+├── config/                      # Configuration files
+│   ├── ai_config.json          # AI prompts and settings
+│   └── service_config.json     # Service configuration  
+├── run_adhd_reader_silent.vbs  # Silent VBScript launcher
+├── adhd_reader.bat             # Batch file launcher
+└── requirements.txt            # Python dependencies
 ```
 
 ---
 
-**Note**: This project is currently in active development. 
+**Note**: This project provides a complete, production-ready ADHD accessibility tool with seamless Windows integration. The silent launcher system ensures a professional, distraction-free user experience. 

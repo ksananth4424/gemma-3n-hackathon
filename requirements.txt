@@ -49,3 +49,5 @@ configparser>=6.0.0
 
 # Security
 cryptography>=41.0.0
+# UI Framework
+flet>=0.28.0

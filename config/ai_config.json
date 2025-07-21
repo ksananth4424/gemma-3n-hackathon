@@ -8,9 +8,16 @@
     "include_reading_time": true
   },
   "model_prompts": {
-    "adhd_summary_prompt": "Create an ADHD-friendly summary that:\n1. Uses clear, simple language (grade 8 reading level)\n2. Organizes information with headers and bullet points\n3. Limits each section to 3-5 key points maximum\n4. Avoids jargon and complex sentences\n5. Highlights the most important takeaways\n6. Uses active voice and concrete examples\n\nFocus on making the content easy to scan and understand for someone with ADHD.",
-    "text_processing_prompt": "Summarize this text content in an accessible, ADHD-friendly format.",
-    "pdf_processing_prompt": "Extract and summarize the key information from this PDF in an ADHD-friendly format.",
-    "video_processing_prompt": "Create an ADHD-friendly summary of this video transcript, focusing on main points and actionable information."
+    "structured_summary_prompt": "Create an ADHD-friendly summary with EXACTLY these three sections:\n\n**TL;DR:** (1-2 sentences maximum, capture the absolute essence)\n\n**KEY POINTS:** (3-5 bullet points, each under 15 words)\n• [First key point]\n• [Second key point]\n• [Third key point]\n\n**FULL SUMMARY:** Write a comprehensive but easy-to-read paragraph (2-3 sentences) that provides a complete overview of the content. Use simple language, active voice, and make it flow naturally from start to finish. Ensure the paragraph is complete and ends properly.\n\nUse grade 8 reading level, active voice, and concrete examples. Make it scannable for ADHD readers.",
+    
+    "text_processing_prompt": "Analyze this text content and provide a structured ADHD-friendly summary with TL;DR, key points, and full summary sections.",
+    "pdf_processing_prompt": "Extract and analyze this PDF content, then provide a structured ADHD-friendly summary with TL;DR, key points, and full summary sections.",
+    "video_processing_prompt": "Analyze this video transcript and provide a structured ADHD-friendly summary with TL;DR, key points, and full summary sections."
+  },
+  "performance": {
+    "max_content_length": 3000,
+    "chunk_size": 1000,
+    "enable_caching": true,
+    "cache_duration_hours": 24
   }
 }

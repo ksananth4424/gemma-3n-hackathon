@@ -1,7 +1,39 @@
 Windows Registry Editor Version 5.00
 
+; ADHD Reader Silent Context Menu Integration
+; Uses VBScript launcher for completely silent operation (no console windows)
+
 [HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\ADHDReader]
 @="Open with ADHD Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs,0"
 
 [HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\ADHDReader\command]
-@="\"C:\\Users\\aryah\\OneDrive\\Desktop\\Arya\\Gemma 3n\\dist\\adhd_reader_flet.exe\" \"%1\""
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.txt\shell\ADHDReader]
+@="Open with ADHD Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.txt\shell\ADHDReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.docx\shell\ADHDReader]
+@="Open with ADHD Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.docx\shell\ADHDReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.md\shell\ADHDReader]
+@="Open with ADHD Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.md\shell\ADHDReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.rtf\shell\ADHDReader]
+@="Open with ADHD Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.rtf\shell\ADHDReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_adhd_reader_silent.vbs\" \"%1\""

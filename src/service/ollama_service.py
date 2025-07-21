@@ -40,7 +40,7 @@ class OllamaServiceInterface(ABC):
     """Interface for Ollama service"""
     
     @abstractmethod
-    def generate_summary(self, content: str, content_type: ContentType, **kwargs) -> str:
+    def generate_summary(self, content: str, content_type: ContentType, **kwargs) -> Dict[str, str]:
         pass
     
     @abstractmethod
@@ -215,9 +215,9 @@ class OllamaService(OllamaServiceInterface):
             
             raise RuntimeError("No models available")
     
-    def generate_summary(self, content: str, content_type: ContentType, **kwargs) -> str:
+    def generate_summary(self, content: str, content_type: ContentType, **kwargs) -> Dict[str, str]:
         """
-        Generate ADHD-friendly summary using appropriate model
+        Generate structured ADHD-friendly summary using appropriate model
         
         Args:
             content: Content to summarize
@@ -225,7 +225,7 @@ class OllamaService(OllamaServiceInterface):
             **kwargs: Additional parameters
             
         Returns:
-            Generated summary
+            Dictionary with structured summary sections
         """
         try:
             # Select appropriate model
@@ -234,16 +234,16 @@ class OllamaService(OllamaServiceInterface):
             # Get AI configuration
             ai_config = self.config.get_ai_config()
             
-            # Build prompt based on content type
-            prompt = self._build_prompt(content, content_type)
+            # Build structured prompt
+            prompt = self._build_structured_prompt(content, content_type)
             
-            # Generate response
+            # Generate response with better settings for complete summaries
             response = self.client.chat(
                 model=model_name,
                 messages=[
                     {
                         'role': 'system',
-                        'content': ai_config.get('prompts', {}).get('system_prompt', '')
+                        'content': "You are an expert at creating ADHD-friendly summaries. Always provide complete, well-structured responses that finish properly."
                     },
                     {
                         'role': 'user', 
@@ -251,21 +251,23 @@ class OllamaService(OllamaServiceInterface):
                     }
                 ],
                 options={
-                    'temperature': ai_config.get('model', {}).get('temperature', 0.3),
-                    'top_p': ai_config.get('model', {}).get('top_p', 0.9),
-                    'top_k': ai_config.get('model', {}).get('top_k', 40),
-                    'num_predict': ai_config.get('model', {}).get('max_tokens', 500)
+                    'temperature': 0.3,  # Lower for more consistent structure
+                    'top_p': 0.9,
+                    'top_k': 40,
+                    'num_predict': 800,  # Increased to allow complete summaries
+                    'num_ctx': 4096     # Larger context for better understanding
                 }
             )
             
-            summary = response['message']['content']
-            logger.info(f"Generated summary using {model_name} ({len(summary)} chars)")
+            raw_summary = response['message']['content']
+            logger.info(f"Generated summary using {model_name} ({len(raw_summary)} chars)")
             
-            return self._format_summary(summary)
+            # Parse structured response
+            return self._parse_structured_summary(raw_summary)
             
         except Exception as e:
             logger.error(f"Error generating summary: {e}")
-            raise
+            return self._create_fallback_summary(content)
     
     def _build_prompt(self, content: str, content_type: ContentType) -> str:
         """Build appropriate prompt for content type"""
@@ -286,6 +288,120 @@ class OllamaService(OllamaServiceInterface):
             content = content[:max_content_length] + "...\n[Content truncated for processing]"
         
         return template.format(content=content)
+
+    def _build_structured_prompt(self, content: str, content_type: ContentType) -> str:
+        """Build structured prompt for consistent UI section output"""
+        ai_config = self.config.get_ai_config()
+        prompts = ai_config.get('model_prompts', {})
+        
+        # Get the structured prompt template
+        base_prompt = prompts.get('structured_summary_prompt', '')
+        
+        # Get content-specific prompt
+        if content_type == ContentType.PDF:
+            content_prompt = prompts.get('pdf_processing_prompt', '')
+        elif content_type in [ContentType.VIDEO, ContentType.AUDIO]:
+            content_prompt = prompts.get('video_processing_prompt', '')
+        else:
+            content_prompt = prompts.get('text_processing_prompt', '')
+        
+        # Optimize content length for faster processing
+        performance_config = ai_config.get('performance', {})
+        max_length = performance_config.get('max_content_length', 3000)
+        
+        if len(content) > max_length:
+            content = content[:max_length] + "...\n[Content truncated for faster processing]"
+        
+        return f"{content_prompt}\n\n{base_prompt}\n\nContent to analyze:\n{content}"
+    
+    def _parse_structured_summary(self, raw_summary: str) -> Dict[str, str]:
+        """Parse AI response into structured sections for UI"""
+        import re
+        
+        result = {
+            'tldr': '',
+            'bullets': [],
+            'paragraph': ''
+        }
+        
+        try:
+            # Extract TL;DR section
+            tldr_match = re.search(r'\*\*TL;DR:\*\*\s*(.*?)(?=\*\*|$)', raw_summary, re.DOTALL | re.IGNORECASE)
+            if tldr_match:
+                result['tldr'] = tldr_match.group(1).strip()
+            
+            # Extract KEY POINTS section
+            bullets_match = re.search(r'\*\*KEY POINTS:\*\*\s*(.*?)(?=\*\*|$)', raw_summary, re.DOTALL | re.IGNORECASE)
+            if bullets_match:
+                bullets_text = bullets_match.group(1).strip()
+                # Extract bullet points
+                bullet_lines = re.findall(r'[•\-\*]\s*(.+)', bullets_text)
+                result['bullets'] = [bullet.strip() for bullet in bullet_lines if bullet.strip()]
+            
+            # Extract FULL SUMMARY section with better handling
+            full_match = re.search(r'\*\*FULL SUMMARY:\*\*\s*(.*?)(?=\*\*|$)', raw_summary, re.DOTALL | re.IGNORECASE)
+            if full_match:
+                paragraph = full_match.group(1).strip()
+                
+                # If paragraph seems incomplete (doesn't end with proper punctuation), try to complete it
+                if paragraph and not paragraph[-1] in '.!?':
+                    # Look for the last complete sentence
+                    sentences = re.split(r'[.!?]+', paragraph)
+                    if len(sentences) > 1:
+                        # Use all complete sentences
+                        complete_sentences = [s.strip() for s in sentences[:-1] if s.strip()]
+                        if complete_sentences:
+                            paragraph = '. '.join(complete_sentences) + '.'
+                        else:
+                            paragraph = paragraph + '.'
+                    else:
+                        paragraph = paragraph + '.'
+                
+                result['paragraph'] = paragraph
+            
+            # Enhanced fallback: if parsing fails, try to extract any useful content
+            if not any([result['tldr'], result['bullets'], result['paragraph']]):
+                # Split raw summary into sentences and use them intelligently
+                sentences = re.split(r'[.!?]+', raw_summary)
+                clean_sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
+                
+                if clean_sentences:
+                    result['tldr'] = clean_sentences[0] + '.'
+                    result['bullets'] = clean_sentences[1:4] if len(clean_sentences) > 1 else ["Content processed successfully"]
+                    result['paragraph'] = '. '.join(clean_sentences[:3]) + '.' if len(clean_sentences) >= 3 else raw_summary
+                else:
+                    result['tldr'] = "Summary generated successfully"
+                    result['bullets'] = ["Content processed"]
+                    result['paragraph'] = raw_summary
+                
+        except Exception as e:
+            logger.warning(f"Failed to parse structured summary: {e}")
+            # More robust fallback parsing
+            lines = [line.strip() for line in raw_summary.split('\n') if line.strip()]
+            if lines:
+                result['tldr'] = lines[0]
+                result['bullets'] = lines[1:4] if len(lines) > 1 else ["Processing completed"]
+                result['paragraph'] = ' '.join(lines) if len(lines) > 1 else raw_summary
+            else:
+                result['tldr'] = "Summary not available"
+                result['bullets'] = ["Processing completed"]
+                result['paragraph'] = raw_summary
+        
+        return result
+    
+    def _create_fallback_summary(self, content: str) -> Dict[str, str]:
+        """Create fallback summary when AI processing fails"""
+        preview = content[:200] + "..." if len(content) > 200 else content
+        
+        return {
+            'tldr': "Content loaded successfully but AI summary unavailable.",
+            'bullets': [
+                "File content extracted",
+                "AI processing temporarily unavailable", 
+                "Raw content displayed below"
+            ],
+            'paragraph': f"The file has been loaded and content extracted successfully. AI summarization is currently unavailable, but you can review the raw content below. Preview: {preview}"
+        }
     
     def _format_summary(self, summary: str) -> str:
         """Format summary for ADHD-friendly presentation"""

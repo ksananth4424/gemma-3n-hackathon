@@ -110,18 +110,20 @@ class ContentProcessor:
             logger.debug(f"Extracted {len(extracted_content)} characters of content")
             
             # Generate AI summary
-            summary = self.ollama_service.generate_summary(
+            summary_result = self.ollama_service.generate_summary(
                 extracted_content, content_type
             )
             
-            # Create successful result
+            # Create successful result with structured summaries
             processing_time = time.time() - start_time
             
             result = {
                 'success': True,
                 'file_path': file_path,
                 'content_type': content_type.value,
-                'summary': summary,
+                'summary': summary_result.get('paragraph', ''),  # For backward compatibility
+                'structured_summary': summary_result,  # New structured format
+                'content': extracted_content,  # Raw extracted content
                 'metadata': {
                     'file_size': os.path.getsize(file_path),
                     'content_length': len(extracted_content),
