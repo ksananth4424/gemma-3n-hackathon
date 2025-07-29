@@ -22,7 +22,6 @@ def initialize_backend():
     if backend_container is None:
         try:
             print("Initializing backend...")
-            
             # Check if we're running from executable
             import sys
             if getattr(sys, 'frozen', False):
@@ -214,7 +213,7 @@ def create_error_fallback(file_path: str, error: str) -> Dict[str, Any]:
 def create_loading_page(page: ft.Page, file_name: str = None) -> ft.Container:
     """Create an animated loading page"""
     
-    file_text = f"Processing {file_name}..." if file_name else "Initializing ADHD Reader..."
+    file_text = f"Processing {file_name}..." if file_name else "Initializing Prism..."
     
     # Create progress ring
     progress_ring = ft.ProgressRing(width=50, height=50, stroke_width=4)
@@ -222,7 +221,7 @@ def create_loading_page(page: ft.Page, file_name: str = None) -> ft.Container:
     # Create loading messages that cycle
     loading_messages = [
         "🔍 Analyzing content...",
-        "🧠 Generating ADHD-friendly summary...",
+        "🧠 Generating neurodivergent-friendly summary...",
         "📝 Creating key points...",
         "✨ Almost ready..."
     ]
@@ -336,7 +335,7 @@ DUMMY_DATA = {
 }
 
 def main(page: ft.Page):
-    page.title = "ADHD Reader"
+    page.title = "Prism"
     page.scroll = "auto"
     page.window_width = 900
     page.window_height = 800
@@ -396,7 +395,11 @@ def main(page: ft.Page):
     def change_theme(e):
         page.theme_mode = ft.ThemeMode.DARK if theme_switch.value else ft.ThemeMode.LIGHT
         page.bgcolor = "#1E1E1E" if theme_switch.value else "#FAFAFA"
-        page.update()
+        # Rebuild UI to update all colors
+        if content_data["value"]:
+            build_content_ui(content_data["value"])
+        else:
+            page.update()
 
     def update_font_size(e):
         for ctrl in summaries_controls:
@@ -406,11 +409,13 @@ def main(page: ft.Page):
 
     def create_card(content, padding=20):
         """Create a Streamlit-like card container"""
+        card_bg = "#FFFFFF" if page.theme_mode == ft.ThemeMode.LIGHT else "#23272F"
+        card_border = "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#444851"
         return ft.Container(
             content=content,
             padding=padding,
             margin=ft.margin.only(bottom=20),
-            bgcolor="#FFFFFF" if page.theme_mode == ft.ThemeMode.LIGHT else "#2D2D2D",
+            bgcolor=card_bg,
             border_radius=12,
             shadow=ft.BoxShadow(
                 spread_radius=0,
@@ -418,7 +423,7 @@ def main(page: ft.Page):
                 color=ft.Colors.with_opacity(0.1, "#000000"),
                 offset=ft.Offset(0, 2),
             ),
-            border=ft.border.all(1, "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#404040")
+            border=ft.border.all(1, card_border)
         )
 
     def create_section_header(text, icon=""):
@@ -445,11 +450,13 @@ def main(page: ft.Page):
         )
         
         # Header section
-        welcome_text = "ADHD Reader"
+        welcome_text = "Prism"
         if file_path:
             file_name = Path(file_path).name
-            welcome_text = f"ADHD Reader - {file_name}"
+            welcome_text = f"Prism\n{file_name}"
         
+        header_text_color = "#1976D2" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFB74D"
+        status_color = "#4CAF50" if data.get("backend_used", False) else ("#FF9800" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFD54F")
         header_card = create_card(
             ft.Column([
                 ft.Text(
@@ -457,7 +464,7 @@ def main(page: ft.Page):
                     size=36,
                     weight="bold",
                     font_family="lexend",
-                    color="#1976D2",
+                    color=header_text_color,
                     text_align=ft.TextAlign.CENTER
                 ),
                 ft.Container(height=10),
@@ -465,7 +472,7 @@ def main(page: ft.Page):
                 ft.Row([
                     ft.Icon(
                         ft.Icons.SMART_TOY if data.get("backend_used", False) else ft.Icons.DASHBOARD,
-                        color="#4CAF50" if data.get("backend_used", False) else "#FF9800",
+                        color=status_color,
                         size=20
                     ),
                     ft.Text(
@@ -473,7 +480,7 @@ def main(page: ft.Page):
                         if data.get("backend_used", False) 
                         else "Demo Mode / Backend Unavailable",
                         size=14,
-                        color="#4CAF50" if data.get("backend_used", False) else "#FF9800",
+                        color=status_color,
                         font_family="lexend"
                     )
                 ], alignment=ft.MainAxisAlignment.CENTER)
@@ -507,6 +514,8 @@ def main(page: ft.Page):
         main_container.controls.append(settings_card)
         
         # File info card
+        label_color = "#666666" if page.theme_mode == ft.ThemeMode.LIGHT else "#BDBDBD"
+        value_color = "#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#F5F5F5"
         file_info_card = create_card(
             ft.Column([
                 create_section_header("File Information", "📄"),
@@ -514,16 +523,16 @@ def main(page: ft.Page):
                 ft.Container(
                     ft.Column([
                         ft.Row([
-                            ft.Text("File:", weight="bold", font_family="lexend", color="#666666"),
-                            ft.Text(Path(data["file_path"]).name, font_family="lexend")
+                            ft.Text("File:", weight="bold", font_family="lexend", color=label_color),
+                            ft.Text(Path(data["file_path"]).name, font_family="lexend", color=value_color)
                         ]),
                         ft.Row([
-                            ft.Text("Type:", weight="bold", font_family="lexend", color="#666666"),
-                            ft.Text(data["extension"].upper(), font_family="lexend")
+                            ft.Text("Type:", weight="bold", font_family="lexend", color=label_color),
+                            ft.Text(data["extension"].upper(), font_family="lexend", color=value_color)
                         ]),
                         ft.Row([
-                            ft.Text("AI Processed:", weight="bold", font_family="lexend", color="#666666"),
-                            ft.Text("Yes" if data.get("backend_used", False) else "No", font_family="lexend")
+                            ft.Text("AI Processed:", weight="bold", font_family="lexend", color=label_color),
+                            ft.Text("Yes" if data.get("backend_used", False) else "No", font_family="lexend", color=value_color)
                         ])
                     ], spacing=8),
                     padding=15,
@@ -542,7 +551,7 @@ def main(page: ft.Page):
             data["summaries"]["tldr"],
             font_family="lexend",
             size=font_size_slider.value,
-            color="#2E2E2E"
+            color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
         )
         tldr_card = create_card(
             ft.Column([
@@ -563,7 +572,7 @@ def main(page: ft.Page):
                 ft.Container(
                     ft.CircleAvatar(
                         content=ft.Text(str(i), size=12, weight="bold", color="#FFFFFF"),
-                        bgcolor="#1976D2",
+                        bgcolor="#1976D2" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFB300",
                         radius=12
                     )
                 ),
@@ -573,7 +582,7 @@ def main(page: ft.Page):
                     font_family="lexend",
                     size=font_size_slider.value,
                     expand=True,
-                    color="#2E2E2E"
+                    color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
                 )
             ])
             bullet_column.controls.append(bullet)
@@ -596,7 +605,7 @@ def main(page: ft.Page):
             size=font_size_slider.value,
             visible=False,
             ref=paragraph_visible,
-            color="#2E2E2E"
+            color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
         )
         
         toggle_button = ft.ElevatedButton(
@@ -624,6 +633,8 @@ def main(page: ft.Page):
         summaries_controls.append(paragraph_text)
 
         # File content card
+        file_content_bg = "#F8F9FA" if page.theme_mode == ft.ThemeMode.LIGHT else "#181A20"
+        file_content_text = "#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#F5F5F5"
         content_card = create_card(
             ft.Column([
                 create_section_header("File Content", "📘"),
@@ -634,12 +645,12 @@ def main(page: ft.Page):
                         font_family="Consolas",
                         size=14,
                         selectable=True,
-                        color="#2E2E2E"
+                        color=file_content_text
                     ),
                     padding=20,
-                    bgcolor="#F8F9FA" if page.theme_mode == ft.ThemeMode.LIGHT else "#383838",
+                    bgcolor=file_content_bg,
                     border_radius=8,
-                    border=ft.border.all(1, "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#404040")
+                    border=ft.border.all(1, "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#444851")
                 )
             ])
         )
@@ -688,14 +699,14 @@ def main(page: ft.Page):
 if __name__ == "__main__":
     # Use ASCII-safe messages for Windows console compatibility
     try:
-        print("Starting ADHD Reader...")
+        print("Starting Prism...")
         if len(sys.argv) > 1:
             print(f"File from context menu: {sys.argv[1]}")
         else:
             print("Running in demo mode")
     except UnicodeEncodeError:
         # Fallback to ASCII-safe messages
-        print("Starting ADHD Reader...")
+        print("Starting Prism...")
         if len(sys.argv) > 1:
             print(f"File from context menu: {sys.argv[1]}")
         else:
