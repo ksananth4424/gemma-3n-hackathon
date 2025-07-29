@@ -1,4 +1,4 @@
-' ADHD Reader Silent VBScript Launcher
+' Prism Silent VBScript Launcher
 ' Completely hides all console windows for seamless context menu integration
 
 Dim objShell, command, projectPath, filePath

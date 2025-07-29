@@ -82,7 +82,7 @@ python src\ui\main.py README.md
 
 ### 7. Usage via Context Menu
 1. Right-click any supported file (.pdf, .txt, .md, .docx, .rtf)
-2. Select **"Open with ADHD Reader"**
+2. Select **"Open with Prism"**
 3. The ADHD-friendly summary will open automatically (no console windows!)
 
 ### 8. Manual Usage (Alternative)
@@ -95,7 +95,7 @@ python src\ui\main.py "path\to\your\file.pdf"
 
 ### Windows Context Menu (Recommended)
 1. **Install context menu**: Right-click `src\shell\add_adhd_reader_silent.reg` → Run as administrator
-2. **Process any file**: Right-click supported file → "Open with ADHD Reader"
+2. **Process any file**: Right-click supported file → "Open with Prism"
 3. **View summary**: ADHD-friendly interface opens automatically with:
    - 📌 **TL;DR**: Quick 1-2 sentence summary
    - 🔹 **Key Points**: 3-5 bullet points highlighting main ideas
@@ -112,7 +112,7 @@ python src\ui\main.py "path\to\your\file.pdf"
 
 ### File Processing Examples
 ```bash
-# ADHD Reader automatically handles different file types:
+# Prism automatically handles different file types:
 python src\ui\main.py "meeting-notes.txt"      # → Instant text analysis
 python src\ui\main.py "research-paper.pdf"     # → PDF text extraction + AI summary
 python src\ui\main.py "project-spec.md"        # → Markdown parsing + summary
