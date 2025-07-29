@@ -59,9 +59,78 @@ def is_text_file(file_path: str) -> bool:
     text_extensions = {'.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.xml', '.csv'}
     return Path(file_path).suffix.lower() in text_extensions
 
+def is_audio_file(file_path: str) -> bool:
+    """Quick check if file is an audio file"""
+    audio_extensions = {'.mp3', '.wav', '.flac', '.aac', '.m4a', '.ogg', '.wma'}
+    return Path(file_path).suffix.lower() in audio_extensions
+
+def is_video_file(file_path: str) -> bool:
+    """Quick check if file is a video file"""
+    video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.wmv'}
+    return Path(file_path).suffix.lower() in video_extensions
+
 def create_quick_summary(content: str, file_path: str) -> Dict[str, Any]:
     """Create a quick summary without AI when AI is not available"""
     file_name = Path(file_path).name
+    file_ext = Path(file_path).suffix.lower()
+    
+    # Handle audio files
+    if is_audio_file(file_path):
+        try:
+            file_size = os.path.getsize(file_path)
+            size_mb = file_size / (1024 * 1024)
+            
+            return {
+                "tldr": f"Audio file '{file_name}' ({size_mb:.1f} MB) - requires AI backend for transcription.",
+                "bullets": [
+                    f"🎵 Audio File: {file_name}",
+                    f"📊 Size: {size_mb:.1f} MB ({file_size:,} bytes)",
+                    f"🎧 Format: {file_ext.upper()} audio",
+                    "🤖 Enable AI backend for automatic transcription",
+                    "📝 Content summary will be available after processing"
+                ],
+                "paragraph": f"This is an audio file named '{file_name}' in {file_ext.upper()} format with a size of {size_mb:.1f} MB. To view the transcribed content and get an AI-generated summary, ensure the backend services are running and the Whisper transcription model is available. The system will automatically extract speech content and provide ADHD-friendly summaries."
+            }
+        except Exception:
+            return {
+                "tldr": f"Audio file '{file_name}' - processing requires AI backend.",
+                "bullets": [
+                    f"🎵 Audio File: {file_name}",
+                    f"🎧 Format: {file_ext.upper()} audio",
+                    "🤖 Requires AI backend for transcription"
+                ],
+                "paragraph": f"Audio file '{file_name}' detected. Audio transcription requires the AI backend to be running."
+            }
+    
+    # Handle video files  
+    if is_video_file(file_path):
+        try:
+            file_size = os.path.getsize(file_path)
+            size_mb = file_size / (1024 * 1024)
+            
+            return {
+                "tldr": f"Video file '{file_name}' ({size_mb:.1f} MB) - requires AI backend for audio transcription.",
+                "bullets": [
+                    f"🎬 Video File: {file_name}",
+                    f"📊 Size: {size_mb:.1f} MB ({file_size:,} bytes)",
+                    f"📺 Format: {file_ext.upper()} video",
+                    "🤖 Enable AI backend for automatic transcription",
+                    "📝 Audio content will be extracted and transcribed"
+                ],
+                "paragraph": f"This is a video file named '{file_name}' in {file_ext.upper()} format with a size of {size_mb:.1f} MB. To view the transcribed audio content and get an AI-generated summary, ensure the backend services are running. The system will extract audio from the video and provide speech transcription with ADHD-friendly summaries."
+            }
+        except Exception:
+            return {
+                "tldr": f"Video file '{file_name}' - processing requires AI backend.",
+                "bullets": [
+                    f"🎬 Video File: {file_name}",
+                    f"📺 Format: {file_ext.upper()} video",
+                    "🤖 Requires AI backend for transcription"
+                ],
+                "paragraph": f"Video file '{file_name}' detected. Video transcription requires the AI backend to be running."
+            }
+    
+    # Handle text files (existing logic)
     content_preview = content[:500] + "..." if len(content) > 500 else content
     
     # Simple text analysis

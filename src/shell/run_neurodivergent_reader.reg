@@ -1,0 +1,106 @@
+Windows Registry Editor Version 5.00
+
+; Neurodivergent Reader Silent Context Menu Integration
+; Uses VBScript launcher for completely silent operation (no console windows)
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.txt\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.txt\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.docx\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.docx\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.md\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.md\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.rtf\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.rtf\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+; Audio file extensions
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp3\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp3\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.wav\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.wav\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.flac\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.flac\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.aac\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.aac\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.m4a\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.m4a\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+; Video file extensions
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp4\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mp4\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.avi\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.avi\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mov\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mov\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mkv\shell\NeurodivergentReader]
+@="Open with Neurodivergent Reader"
+"Icon"="C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs,0"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.mkv\shell\NeurodivergentReader\command]
+@="wscript.exe \"C:\\GitHub\\gemma-3n-hackathon\\run_neurodivergent_reader_silent.vbs\" \"%1\""
+
+

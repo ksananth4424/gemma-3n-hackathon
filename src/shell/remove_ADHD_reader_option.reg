@@ -1,0 +1,23 @@
+Windows Registry Editor Version 5.00
+
+; Remove Neurodivergent Reader context menu entries
+
+; Text files
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.txt\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.docx\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.md\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.rtf\shell\ADHDReader]
+
+; Audio files
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.mp3\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.wav\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.flac\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.aac\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.m4a\shell\ADHDReader]
+
+; Video files
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.mp4\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.avi\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.mov\shell\ADHDReader]
+[-HKEY_CLASSES_ROOT\SystemFileAssociations\.mkv\shell\ADHDReader]

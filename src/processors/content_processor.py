@@ -1,5 +1,9 @@
 """
-Main Content Processor - Orchestrates all content processing with DI
+Main Content Processor         # Lazy loading of processors to avoid circular dependencies
+        self._pdf_processor = None
+        self._video_processor = None
+        self._audio_processor = None
+        self._text_processor = Nonechestrates all content processing with DI
 """
 
 import logging
@@ -29,6 +33,7 @@ class ContentProcessor:
         # Lazy loading of processors to avoid circular dependencies
         self._pdf_processor = None
         self._video_processor = None
+        self._audio_processor = None
         self._text_processor = None
         
         # File type mapping
@@ -39,6 +44,13 @@ class ContentProcessor:
             '.mov': ContentType.VIDEO,
             '.mkv': ContentType.VIDEO,
             '.wmv': ContentType.VIDEO,
+            '.mp3': ContentType.AUDIO,
+            '.wav': ContentType.AUDIO,
+            '.flac': ContentType.AUDIO,
+            '.aac': ContentType.AUDIO,
+            '.m4a': ContentType.AUDIO,
+            '.ogg': ContentType.AUDIO,
+            '.wma': ContentType.AUDIO,
             '.txt': ContentType.TEXT,
             '.md': ContentType.TEXT,
             '.docx': ContentType.TEXT,
@@ -62,7 +74,15 @@ class ContentProcessor:
             from .video_processor import VideoProcessor
             self._video_processor = VideoProcessor(self.config)
         return self._video_processor
-    
+
+    @property
+    def audio_processor(self):
+        """Lazy load audio processor"""
+        if self._audio_processor is None:
+            from .audio_processor import AudioProcessor
+            self._audio_processor = AudioProcessor(self.config)
+        return self._audio_processor
+
     @property
     def text_processor(self):
         """Lazy load text processor"""
@@ -144,6 +164,8 @@ class ContentProcessor:
             return self.pdf_processor.extract_content(file_path)
         elif content_type == ContentType.VIDEO:
             return self.video_processor.extract_content(file_path)
+        elif content_type == ContentType.AUDIO:
+            return self.audio_processor.extract_content(file_path)
         elif content_type == ContentType.TEXT:
             return self.text_processor.extract_content(file_path)
         else:

@@ -7,10 +7,17 @@ import ffmpeg
 import tempfile
 import os
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
-from ..utils.config_manager import ConfigManager
+# Handle imports for both direct execution and module import
+try:
+    from ..utils.config_manager import ConfigManager
+except ImportError:
+    # Direct execution fallback
+    sys.path.append(str(Path(__file__).parent.parent))
+    from utils.config_manager import ConfigManager
 
 logger = logging.getLogger('accessibility_assistant.video_processor')
 

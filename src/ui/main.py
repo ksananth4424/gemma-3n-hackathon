@@ -146,7 +146,7 @@ def get_file_info_fallback(file_path, error_message=""):
     
     try:
         # Use fast processor for immediate results
-        from src.utils.fast_processor import fast_file_validation, fast_extract_text_content, is_text_file, create_quick_summary
+        from src.utils.fast_processor import fast_file_validation, fast_extract_text_content, is_text_file, is_audio_file, is_video_file, create_quick_summary
         
         # Quick validation
         validation = fast_file_validation(str(file_path))
@@ -168,6 +168,19 @@ def get_file_info_fallback(file_path, error_message=""):
                 "file_content": content[:2000] + "..." if len(content) > 2000 else content,
                 "backend_used": False,
                 "processing_time": 0.1  # Very fast
+            }
+        elif is_audio_file(str(file_path)) or is_video_file(str(file_path)):
+            # Audio and video files - show informational summary
+            quick_summary = create_quick_summary("", str(file_path))
+            media_type = "audio" if is_audio_file(str(file_path)) else "video"
+            
+            return {
+                "file_path": str(file_path.absolute()),
+                "extension": file_path.suffix,
+                "summaries": quick_summary,
+                "file_content": f"{media_type.title()} file: {file_path.name}\nSize: {size_mb:.2f} MB\nType: {file_path.suffix.upper()}\n\nTo view transcribed content, ensure the AI backend is running and try again. The system will automatically extract speech content and provide ADHD-friendly summaries.",
+                "backend_used": False,
+                "processing_time": 0.05
             }
         else:
             # Non-text file
