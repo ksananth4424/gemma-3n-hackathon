@@ -147,7 +147,7 @@ def get_file_info_fallback(file_path, error_message=""):
     
     try:
         # Use fast processor for immediate results
-        from ..utils.fast_processor import fast_file_validation, fast_extract_text_content, is_text_file, create_quick_summary
+        from src.utils.fast_processor import fast_file_validation, fast_extract_text_content, is_text_file, create_quick_summary
         
         # Quick validation
         validation = fast_file_validation(str(file_path))
@@ -415,7 +415,7 @@ def main(page: ft.Page):
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=8,
-                color=ft.colors.with_opacity(0.1, "#000000"),
+                color=ft.Colors.with_opacity(0.1, "#000000"),
                 offset=ft.Offset(0, 2),
             ),
             border=ft.border.all(1, "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#404040")
@@ -464,7 +464,7 @@ def main(page: ft.Page):
                 # Enhanced status indicator
                 ft.Row([
                     ft.Icon(
-                        ft.icons.SMART_TOY if data.get("backend_used", False) else ft.icons.DASHBOARD,
+                        ft.Icons.SMART_TOY if data.get("backend_used", False) else ft.Icons.DASHBOARD,
                         color="#4CAF50" if data.get("backend_used", False) else "#FF9800",
                         size=20
                     ),
@@ -608,7 +608,7 @@ def main(page: ft.Page):
                 color="#FFFFFF",
                 shape=ft.RoundedRectangleBorder(radius=8)
             ),
-            icon=ft.icons.EXPAND_MORE
+            icon=ft.Icons.EXPAND_MORE
         )
         
         full_summary_card = create_card(
