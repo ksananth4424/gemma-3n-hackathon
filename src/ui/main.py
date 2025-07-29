@@ -342,6 +342,8 @@ def main(page: ft.Page):
     page.window_height = 800
     page.fonts = {"lexend": "https://fonts.googleapis.com/css2?family=Lexend&display=swap"}
     page.theme_mode = ft.ThemeMode.LIGHT
+    page.padding = 20
+    page.bgcolor = "#FAFAFA"
 
     # Get file path from command line arguments (from context menu)
     file_path = None
@@ -365,8 +367,20 @@ def main(page: ft.Page):
     loading_container = create_loading_page(page, file_name)
     
     # Font size and theme settings
-    font_size_slider = ft.Slider(min=12, max=24, divisions=6, label="{value}px", value=16)
-    theme_switch = ft.Switch(label="Dark Mode")
+    font_size_slider = ft.Slider(
+        min=12, 
+        max=24, 
+        divisions=6, 
+        label="{value}px", 
+        value=16,
+        active_color="#1976D2",
+        thumb_color="#1976D2"
+    )
+    
+    theme_switch = ft.Switch(
+        label="Dark Mode",
+        active_color="#1976D2"
+    )
 
     paragraph_visible = ft.Ref[ft.Text]()
     toggle_btn = ft.Ref[ft.ElevatedButton]()
@@ -381,6 +395,7 @@ def main(page: ft.Page):
 
     def change_theme(e):
         page.theme_mode = ft.ThemeMode.DARK if theme_switch.value else ft.ThemeMode.LIGHT
+        page.bgcolor = "#1E1E1E" if theme_switch.value else "#FAFAFA"
         page.update()
 
     def update_font_size(e):
@@ -389,106 +404,252 @@ def main(page: ft.Page):
                 ctrl.size = font_size_slider.value
         page.update()
 
+    def create_card(content, padding=20):
+        """Create a Streamlit-like card container"""
+        return ft.Container(
+            content=content,
+            padding=padding,
+            margin=ft.margin.only(bottom=20),
+            bgcolor="#FFFFFF" if page.theme_mode == ft.ThemeMode.LIGHT else "#2D2D2D",
+            border_radius=12,
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=8,
+                color=ft.colors.with_opacity(0.1, "#000000"),
+                offset=ft.Offset(0, 2),
+            ),
+            border=ft.border.all(1, "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#404040")
+        )
+
+    def create_section_header(text, icon=""):
+        """Create a consistent section header"""
+        return ft.Row([
+            ft.Text(
+                f"{icon} {text}",
+                size=22,
+                weight="bold",
+                font_family="lexend",
+                color="#1976D2"
+            )
+        ], alignment=ft.MainAxisAlignment.START)
+
     def build_content_ui(data):
         """Build the main content UI with processed data"""
         page.controls.clear()  # Clear loading screen
         
-        # Welcome header with status
-        welcome_text = "✨ Welcome to ADHD Reader ✨"
+        # Main container for all content
+        main_container = ft.Column(
+            controls=[],
+            spacing=0,
+            expand=True
+        )
+        
+        # Header section
+        welcome_text = "ADHD Reader"
         if file_path:
             file_name = Path(file_path).name
-            welcome_text = f"✨ ADHD Reader - {file_name} ✨"
+            welcome_text = f"ADHD Reader - {file_name}"
         
-        page.add(
-            ft.Text(welcome_text, size=32, weight="bold", font_family="lexend", color="#0D47A1")
+        header_card = create_card(
+            ft.Column([
+                ft.Text(
+                    welcome_text,
+                    size=36,
+                    weight="bold",
+                    font_family="lexend",
+                    color="#1976D2",
+                    text_align=ft.TextAlign.CENTER
+                ),
+                ft.Container(height=10),
+                # Enhanced status indicator
+                ft.Row([
+                    ft.Icon(
+                        ft.icons.SMART_TOY if data.get("backend_used", False) else ft.icons.DASHBOARD,
+                        color="#4CAF50" if data.get("backend_used", False) else "#FF9800",
+                        size=20
+                    ),
+                    ft.Text(
+                        f"Processed with AI Backend ({data.get('actual_processing_time', 0):.1f}s)" 
+                        if data.get("backend_used", False) 
+                        else "Demo Mode / Backend Unavailable",
+                        size=14,
+                        color="#4CAF50" if data.get("backend_used", False) else "#FF9800",
+                        font_family="lexend"
+                    )
+                ], alignment=ft.MainAxisAlignment.CENTER)
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=30
         )
+        main_container.controls.append(header_card)
 
-        # Enhanced status indicator with performance info
-        status_color = "#4CAF50" if data.get("backend_used", False) else "#FF9800"
-        processing_time = data.get('actual_processing_time', 0)
-        
-        if data.get("backend_used", False):
-            status_text = f"🤖 Processed with AI Backend ({processing_time:.1f}s)"
-        else:
-            status_text = "📋 Demo Mode / Backend Unavailable"
-        
-        page.add(
-            ft.Text(status_text, size=14, color=status_color, italic=True)
-        )
-
-        # File Info Display (more compact)
-        page.add(ft.Text("📄 File Info", size=18, weight="bold", font_family="lexend"))
-        file_info = {
-            "file": Path(data["file_path"]).name,
-            "type": data["extension"].upper(),
-            "ai_processed": data.get("backend_used", False)
-        }
-        page.add(ft.Text(json.dumps(file_info, indent=2), 
-                        font_family="Courier New", selectable=True, size=12))
-
-        # Font size + theme toggle row
-        page.add(
-            ft.Row([
-                ft.Text("Font size", font_family="lexend"),
-                font_size_slider,
-                ft.VerticalDivider(),
-                theme_switch
+        # Settings card
+        settings_card = create_card(
+            ft.Column([
+                create_section_header("Settings", "⚙️"),
+                ft.Container(height=15),
+                ft.Row([
+                    ft.Container(
+                        ft.Row([
+                            ft.Text("Font Size:", font_family="lexend", weight="w500"),
+                            ft.Container(width=10),
+                            ft.Container(
+                                font_size_slider,
+                                expand=True
+                            )
+                        ]),
+                        expand=True
+                    ),
+                    ft.Container(width=30),
+                    theme_switch
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             ])
         )
-        theme_switch.on_change = change_theme
-        font_size_slider.on_change = update_font_size
+        main_container.controls.append(settings_card)
+        
+        # File info card
+        file_info_card = create_card(
+            ft.Column([
+                create_section_header("File Information", "📄"),
+                ft.Container(height=15),
+                ft.Container(
+                    ft.Column([
+                        ft.Row([
+                            ft.Text("File:", weight="bold", font_family="lexend", color="#666666"),
+                            ft.Text(Path(data["file_path"]).name, font_family="lexend")
+                        ]),
+                        ft.Row([
+                            ft.Text("Type:", weight="bold", font_family="lexend", color="#666666"),
+                            ft.Text(data["extension"].upper(), font_family="lexend")
+                        ]),
+                        ft.Row([
+                            ft.Text("AI Processed:", weight="bold", font_family="lexend", color="#666666"),
+                            ft.Text("Yes" if data.get("backend_used", False) else "No", font_family="lexend")
+                        ])
+                    ], spacing=8),
+                    padding=15,
+                    bgcolor="#F8F9FA" if page.theme_mode == ft.ThemeMode.LIGHT else "#383838",
+                    border_radius=8
+                )
+            ])
+        )
+        main_container.controls.append(file_info_card)
 
-        # Enhanced Summaries with clean structure
-        summaries_controls.clear()  # Reset for new content
+        # Clear summaries controls for new content
+        summaries_controls.clear()
 
-        # TL;DR - Clean and simple
-        page.add(ft.Container(height=10))  # Spacer
-        page.add(ft.Text("📌 TL;DR", size=20, weight="bold", font_family="lexend"))
-        tldr_text = ft.Text(data["summaries"]["tldr"], font_family="lexend", size=font_size_slider.value)
-        page.add(tldr_text)
+        # TL;DR card
+        tldr_text = ft.Text(
+            data["summaries"]["tldr"],
+            font_family="lexend",
+            size=font_size_slider.value,
+            color="#2E2E2E"
+        )
+        tldr_card = create_card(
+            ft.Column([
+                create_section_header("TL;DR", "📌"),
+                ft.Container(height=15),
+                tldr_text
+            ])
+        )
+        main_container.controls.append(tldr_card)
         summaries_controls.append(tldr_text)
 
-        # Bullet points - Clean formatting
-        page.add(ft.Container(height=15))  # Spacer
-        page.add(ft.Text("🔹 Key Points", size=20, weight="bold", font_family="lexend"))
+        # Key points card
+        bullet_controls = []
+        bullet_column = ft.Column([], spacing=12)
         
         for i, point in enumerate(data["summaries"]["bullets"], 1):
-            bullet = ft.Text(f"• {point}", font_family="lexend", size=font_size_slider.value)
-            page.add(bullet)
-            summaries_controls.append(bullet)
+            bullet = ft.Row([
+                ft.Container(
+                    ft.CircleAvatar(
+                        content=ft.Text(str(i), size=12, weight="bold", color="#FFFFFF"),
+                        bgcolor="#1976D2",
+                        radius=12
+                    )
+                ),
+                ft.Container(width=10),
+                ft.Text(
+                    point,
+                    font_family="lexend",
+                    size=font_size_slider.value,
+                    expand=True,
+                    color="#2E2E2E"
+                )
+            ])
+            bullet_column.controls.append(bullet)
+            bullet_controls.append(bullet.controls[2])  # The text component
+            summaries_controls.append(bullet.controls[2])
 
-        # Full paragraph summary - Collapsible
-        page.add(ft.Container(height=15))  # Spacer
-        page.add(ft.Text("🧾 Full Summary", size=20, weight="bold", font_family="lexend"))
-        
+        key_points_card = create_card(
+            ft.Column([
+                create_section_header("Key Points", "🔹"),
+                ft.Container(height=15),
+                bullet_column
+            ])
+        )
+        main_container.controls.append(key_points_card)
+
+        # Full summary card (collapsible)
         paragraph_text = ft.Text(
             data["summaries"]["paragraph"],
             font_family="lexend",
             size=font_size_slider.value,
             visible=False,
-            ref=paragraph_visible
+            ref=paragraph_visible,
+            color="#2E2E2E"
         )
         
-        page.add(paragraph_text)
-        page.add(ft.ElevatedButton(
-            "Show Full Summary", 
-            ref=toggle_btn, 
-            on_click=toggle_paragraph
-        ))
+        toggle_button = ft.ElevatedButton(
+            "Show Full Summary",
+            ref=toggle_btn,
+            on_click=toggle_paragraph,
+            style=ft.ButtonStyle(
+                bgcolor="#1976D2",
+                color="#FFFFFF",
+                shape=ft.RoundedRectangleBorder(radius=8)
+            ),
+            icon=ft.icons.EXPAND_MORE
+        )
+        
+        full_summary_card = create_card(
+            ft.Column([
+                create_section_header("Full Summary", "📋"),
+                ft.Container(height=15),
+                paragraph_text,
+                ft.Container(height=10),
+                toggle_button
+            ])
+        )
+        main_container.controls.append(full_summary_card)
         summaries_controls.append(paragraph_text)
 
-        # File content display - Clean
-        page.add(ft.Container(height=20))  # Spacer
-        page.add(ft.Text("📘 File Content", size=20, weight="bold", font_family="lexend"))
-        page.add(
-            ft.Container(
-                ft.Text(data["file_content"], font_family="Consolas", size=14, selectable=True),
-                padding=15,
-                border_radius=8,
-                expand=True
-            )
+        # File content card
+        content_card = create_card(
+            ft.Column([
+                create_section_header("File Content", "📘"),
+                ft.Container(height=15),
+                ft.Container(
+                    ft.Text(
+                        data["file_content"],
+                        font_family="Consolas",
+                        size=14,
+                        selectable=True,
+                        color="#2E2E2E"
+                    ),
+                    padding=20,
+                    bgcolor="#F8F9FA" if page.theme_mode == ft.ThemeMode.LIGHT else "#383838",
+                    border_radius=8,
+                    border=ft.border.all(1, "#E0E0E0" if page.theme_mode == ft.ThemeMode.LIGHT else "#404040")
+                )
+            ])
         )
+        main_container.controls.append(content_card)
         
+        # Set up event handlers
+        theme_switch.on_change = change_theme
+        font_size_slider.on_change = update_font_size
+        
+        page.add(main_container)
         page.update()
 
     def on_processing_complete(result, error):
