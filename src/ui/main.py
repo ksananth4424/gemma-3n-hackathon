@@ -12,6 +12,15 @@ from typing import Dict, Any
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+# Import TTS functionality with fallback for direct execution
+try:
+    from .tts_manager import tts_manager
+    from .tts_components import create_tts_controls_panel, create_tts_unavailable_panel
+except ImportError:
+    # Fallback for direct script execution
+    from tts_manager import tts_manager
+    from tts_components import create_tts_controls_panel, create_tts_unavailable_panel
+
 # Global backend container - initialize once for performance
 backend_container = None
 processing_lock = threading.Lock()
@@ -396,13 +405,25 @@ def main(page: ft.Page):
 
     paragraph_visible = ft.Ref[ft.Text]()
     toggle_btn = ft.Ref[ft.ElevatedButton]()
+    tts_container_ref = ft.Ref[ft.Container]()
 
     def toggle_paragraph(e):
         if paragraph_visible.current:
             # Toggle visibility of the paragraph container
-            paragraph_visible.current.visible = not paragraph_visible.current.visible
+            is_visible = not paragraph_visible.current.visible
+            paragraph_visible.current.visible = is_visible
+            
+            # Also toggle TTS controls visibility
+            if tts_container_ref.current:
+                tts_container_ref.current.visible = is_visible
+            
             if toggle_btn.current:
-                toggle_btn.current.text = "Hide Full Summary" if paragraph_visible.current.visible else "Show Full Summary"
+                if is_visible:
+                    toggle_btn.current.text = "Hide Full Summary"
+                    toggle_btn.current.icon = ft.Icons.EXPAND_LESS
+                else:
+                    toggle_btn.current.text = "Show Full Summary"
+                    toggle_btn.current.icon = ft.Icons.EXPAND_MORE
             page.update()
 
     def change_theme(e):
@@ -611,7 +632,7 @@ def main(page: ft.Page):
         )
         main_container.controls.append(key_points_card)
 
-        # Full summary card (collapsible)
+        # Full summary card (collapsible) with TTS controls positioned to the right
         paragraph_text = ft.Text(
             data["summaries"]["paragraph"],
             font_family="lexend",
@@ -633,15 +654,44 @@ def main(page: ft.Page):
             icon=ft.Icons.EXPAND_MORE
         )
         
-        full_summary_card = create_card(
-            ft.Column([
-                create_section_header("Full Summary", "📋"),
-                ft.Container(height=15),
-                paragraph_text,
-                ft.Container(height=10),
-                toggle_button
-            ])
-        )
+        # Create TTS controls using the separate component
+        tts_controls = create_tts_controls_panel(
+            data=data,
+            paragraph_visible=paragraph_visible,
+            page=page,
+            theme_mode=page.theme_mode
+        ) if tts_manager.is_available else create_tts_unavailable_panel(page.theme_mode)
+        
+        # Full summary content with TTS positioned to the right when expanded
+        full_summary_content = ft.Column([
+            create_section_header("Full Summary", "📋"),
+            ft.Container(height=15),
+            
+            # Toggle button row
+            ft.Row([
+                toggle_button,
+            ], alignment=ft.MainAxisAlignment.START),
+            
+            ft.Container(height=10),
+            
+            # Content and TTS side by side when expanded
+            ft.Row([
+                # Left side: paragraph text
+                ft.Container(
+                    content=paragraph_text,
+                    expand=True,
+                    padding=ft.padding.only(right=20)
+                ),
+                # Right side: TTS controls (only visible when paragraph is visible)
+                ft.Container(
+                    content=tts_controls,
+                    visible=False,  # Will be controlled by toggle
+                    ref=tts_container_ref
+                )
+            ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START)
+        ])
+        
+        full_summary_card = create_card(full_summary_content)
         main_container.controls.append(full_summary_card)
         summaries_controls.append(paragraph_text)
 
