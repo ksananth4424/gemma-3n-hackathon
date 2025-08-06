@@ -117,10 +117,14 @@ def process_file_with_backend(file_path):
         
         # Handle both old and new format for compatibility
         if structured_summary:
-            tldr = structured_summary.get('tldr', '')
+            tldr = structured_summary.get('tldr', '').strip()
             bullets = structured_summary.get('bullets', [])
-            paragraph = structured_summary.get('paragraph', '')
+            paragraph = structured_summary.get('paragraph', '').strip()
             sources = structured_summary.get('sources', {})
+            
+            # Clean bullets to prevent text cutting
+            if isinstance(bullets, list):
+                bullets = [bullet.strip() for bullet in bullets if bullet and bullet.strip()]
         else:
             # Fallback to old format
             summary = result.get('summary', '')
@@ -324,7 +328,7 @@ def process_file_async(file_path: str, page: ft.Page, callback):
                 processing_time = time.time() - start_time
                 result['actual_processing_time'] = processing_time
                 
-                print(f"✅ Processing completed in {processing_time:.2f}s")
+                # print(f"✅ Processing completed in {processing_time:.2f}s")
                 
                 # Call the callback with results
                 callback(result, None)
