@@ -1,17 +1,16 @@
-# Windows Accessibility Assistant
+# Prism: Local LLM Gemma3n-Powered Accessibility Assistant
 
-A sophisticated Windows plugin that provides AI-powered content summarization for neurodivergent users, particularly those with ADHD. The assistant integrates directly into Windows Explorer's context menu, allowing users to quickly generate accessible summaries of PDFs, videos, and text documents using the local Gemma 3n language model.
+An intelligent Windows application that transforms content consumption for neurodivergent users through AI-powered summarization. Built with Google's Gemma 3n model and Ollama, Prism integrates seamlessly into Windows Explorer to provide instant, ADHD-optimized summaries of documents, PDFs, and videos.
 
 ## Key Features
 
-- ADHD-Friendly Summarization: Generates clear, concise summaries optimized for neurodivergent users
-- Windows Explorer Integration: Right-click context menu for seamless file processing
-- Privacy-First: Runs entirely locally using Ollama and Gemma 3n - no data sent to cloud services
-- Multi-Format Support: Processes PDFs, videos (MP4, AVI, MOV), and text documents
+- Local LLM Processing: Leverages Gemma 3n (e2b/e4b) via Ollama for privacy-first content analysis
+- Universal Accessibility: Supports users with ADHD, dyslexia, and other neurodivergent conditions
+- Zero-Setup Integration: One-click Windows context menu installation
+- Multi-Modal Content: Processes text documents, PDFs, and video transcriptions
+- Neurodivergent-Friendly Summarization: Generates clear, concise summaries optimized for neurodivergent users
 - Offline Capable: Works without internet connection
-- Accessibility Focused: Designed with ADHD-specific UI/UX principles
 - Smart Model Selection: Uses optimal model based on content type and complexity
-- Dependency Injection: Efficient resource management and modular architecture
 
 ## Architecture
 
@@ -19,18 +18,18 @@ This application follows a sophisticated multi-layer architecture with dependenc
 
 ```
 src/
-├── bootstrap.py         # Dependency injection setup
-├── service/            # Windows service and Ollama integration
-│   └── ollama_service.py   # Smart model selection and AI processing
-├── shell/            # Windows Explorer context menu integration  
-├── processors/         # Content extraction with specialized processors
-│   ├── content_processor.py  # Main orchestrator
+├── bootstrap.py             # Dependency injection setup
+├── service/                 # Windows service and Ollama integration
+│   └── ollama_service.py    # Smart model selection and AI processing
+├── shell/                   # Windows Explorer context menu integration  
+├── processors/              # Content extraction with specialized processors
+│   ├── content_processor.py # Main orchestrator
 │   ├── pdf_processor.py     # PDF extraction with OCR
 │   ├── video_processor.py   # Video transcription with Whisper
 │   └── text_processor.py    # Text format handling
-├── ui/                # ADHD-friendly user interfaces
-├── utils/             # Configuration, logging, DI container
-└── models/            # Ollama Modelfiles for optimized prompts
+├── ui/                      # ADHD-friendly user interfaces
+├── utils/                   # Configuration, logging, DI container
+└── models/                  # Ollama Modelfiles for optimized prompts
 ```
 
 ## Prerequisites
@@ -76,14 +75,14 @@ python src\ui\main.py README.md
 
 ### 6. Setup Windows Context Menu Integration
 
-1. Right-click on `src\shell\add_adhd_reader_silent.reg`
+1. Right-click on `src\shell\add_neurodivergent_reader.reg`
 2. Select "Run as administrator"
 3. Click "Yes" to confirm registry changes
 
 ### 7. Usage via Context Menu
 1. Right-click any supported file (.pdf, .txt, .md, .docx, .rtf)
 2. Select **"Open with Prism"**
-3. The ADHD-friendly summary will open automatically (no console windows!)
+3. The Neurodivergent-friendly summary window - Prism will open automatically (no console windows!)
 
 ### 8. Manual Usage (Alternative)
 ```bash
@@ -134,43 +133,7 @@ Configuration files are located in `config/`:
 - `ai_config.json`: AI model and prompt configuration  
 - `logging_config.json`: Logging configuration
 
-### AI Configuration Example
-```json
-{
-  "model": {
-    "name": "gemma3n:e4b",
-    "fallback_model": "gemma3n:e2b",
-    "temperature": 0.3
-  },
-  "summarization": {
-    "max_key_points": 5,
-    "adhd_optimized": true,
-    "use_bullet_points": true
-  }
-}
-```
-```bash
-pip install -r requirements.txt
-```
-
-### 5. Test Installation
-```bash
-python main.py "path/to/test/file.pdf"
-```
-
-## Configuration
-
-### AI Configuration (`config/ai_config.json`)
-- **Model Selection**: Choose between `gemma3n:e2b` or `gemma3n:e4b`
-- **Summarization Settings**: Adjust key points count, length, formatting
-- **Performance**: Memory limits, GPU settings
-
-### Service Configuration (`config/service_config.json`)
-- **File Support**: Enable/disable file types
-- **Size Limits**: Maximum file size processing
-- **Concurrency**: Parallel processing settings
-
-## ADHD-Optimized Features
+## Neurodivergent-Optimized Features
 
 **Cognitive Load Management**
 - **Limited Key Points**: Summaries focus on 3-5 main points maximum
@@ -190,52 +153,9 @@ python main.py "path/to/test/file.pdf"
 - **Silent Operation**: No console windows or technical distractions
 - **Instant Previews**: Immediate file info while AI processes
 
-**ADHD-Specific Adaptations**
+**Neurodivergent-Specific Adaptations**
 - **Structured Output**: TL;DR → Key Points → Full Summary progression
 - **Scannable Format**: Easy to skim and find relevant information
 - **Context Preservation**: File content always available for reference
 - **Distraction-Free**: Minimal, focused interfaces without clutter
-
-### Ollama Service Issues
-```bash
-# Check if Ollama is running
-ollama list
-
-# Start Ollama service
-ollama serve
-
-# Verify models are installed
-ollama list | findstr gemma3n
-```
-
-### Python Dependencies
-```bash
-# Reinstall requirements
-pip install -r requirements.txt
-
-# Test Python execution
-python src\ui\main.py README.md
-```
-
-## Development
-
-### Project Structure
-```
-├── src/                          # Source code
-│   ├── ui/main.py               # Main ADHD-friendly interface  
-│   ├── processors/              # Content extraction engines
-│   ├── service/ollama_service.py # AI model integration
-│   ├── shell/                   # Windows Explorer integration
-│   ├── utils/                   # Configuration and utilities
-│   └── models/                  # Data models
-├── config/                      # Configuration files
-│   ├── ai_config.json          # AI prompts and settings
-│   └── service_config.json     # Service configuration  
-├── run_adhd_reader_silent.vbs  # Silent VBScript launcher
-├── adhd_reader.bat             # Batch file launcher
-└── requirements.txt            # Python dependencies
-```
-
----
-
-**Note**: This project provides a complete, production-ready ADHD accessibility tool with seamless Windows integration. The silent launcher system ensures a professional, distraction-free user experience. 
+- **Test-To-Speech**: Offers TTS feature with multiple voice options
