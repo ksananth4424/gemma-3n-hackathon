@@ -26,6 +26,8 @@ def main():
                        default='text', help='Output format')
     parser.add_argument('--verbose', '-v', action='store_true', 
                        help='Enable verbose logging')
+    parser.add_argument('--detailed', '-d', action='store_true',
+                       help='Show detailed structured response breakdown')
     parser.add_argument('--setup-models', action='store_true',
                        help='Setup Ollama models and exit')
     
@@ -67,13 +69,62 @@ def main():
                         f.write(result['summary'])
                 print(f"Summary saved to: {args.output}")
             else:
-                print("\n" + "="*60)
-                print("ACCESSIBILITY SUMMARY")
-                print("="*60)
+                if args.detailed:
+                    # Show detailed structured response
+                    print("\n" + "="*60)
+                    print("DETAILED STRUCTURED RESPONSE")
+                    print("="*60)
+                    
+                    # Show raw summary data if available
+                    if 'raw_summary' in result:
+                        print("\nRAW AI RESPONSE:")
+                        print("-" * 40)
+                        print(result['raw_summary'])
+                    
+                    # Show parsed structured data if available
+                    if 'structured_data' in result:
+                        print("\nPARSED STRUCTURED DATA:")
+                        print("-" * 40)
+                        structured = result['structured_data']
+                        
+                        if 'tldr' in structured:
+                            print(f"TL;DR: {structured['tldr']}")
+                        if 'tldr_source' in structured:
+                            print(f"TL;DR Source: {structured['tldr_source']}")
+                            
+                        if 'key_points' in structured:
+                            print(f"\nKEY POINTS ({len(structured['key_points'])} items):")
+                            for i, point in enumerate(structured['key_points'], 1):
+                                print(f"  {i}. {point}")
+                        
+                        if 'key_point_sources' in structured:
+                            print(f"\nKEY POINT SOURCES:")
+                            for i, source in enumerate(structured['key_point_sources'], 1):
+                                print(f"  {i}. {source}")
+                        
+                        if 'full_summary' in structured:
+                            print(f"\nFULL SUMMARY:")
+                            print(f"  {structured['full_summary']}")
+                        
+                        if 'sources' in structured:
+                            print(f"\nALL SOURCES:")
+                            for i, source in enumerate(structured['sources'], 1):
+                                print(f"  {i}. {source}")
+                    
+                    print("\n" + "="*60)
+                    print("FORMATTED OUTPUT")
+                    print("="*60)
+                
                 print(result['summary'])
                 print("="*60)
                 print(f"\nProcessing time: {result['metadata']['processing_time']:.2f}s")
                 print(f"Content type: {result['content_type']}")
+                
+                if args.detailed:
+                    print(f"Content length: {result['metadata'].get('content_length', 'Unknown')} chars")
+                    print(f"Model used: {result['metadata'].get('model_used', 'Unknown')}")
+                    if 'enhancement_applied' in result['metadata']:
+                        print(f"Enhancement applied: {result['metadata']['enhancement_applied']}")
         else:
             print(f"ERROR: {result.get('error', 'Unknown error')}")
             sys.exit(1)

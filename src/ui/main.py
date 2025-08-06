@@ -120,6 +120,7 @@ def process_file_with_backend(file_path):
             tldr = structured_summary.get('tldr', '')
             bullets = structured_summary.get('bullets', [])
             paragraph = structured_summary.get('paragraph', '')
+            sources = structured_summary.get('sources', {})
         else:
             # Fallback to old format
             summary = result.get('summary', '')
@@ -127,6 +128,7 @@ def process_file_with_backend(file_path):
             tldr = summary[:200] + "..." if len(summary) > 200 else summary
             bullets = [sentence.strip() + '.' for sentence in sentences if sentence.strip()]
             paragraph = summary
+            sources = {'tldr': '', 'bullets': [], 'paragraph': []}
         
         return {
             "file_path": file_path,
@@ -134,7 +136,8 @@ def process_file_with_backend(file_path):
             "summaries": {
                 "tldr": tldr,
                 "bullets": bullets,
-                "paragraph": paragraph
+                "paragraph": paragraph,
+                "sources": sources
             },
             "file_content": content[:2000] + "..." if len(content) > 2000 else content,
             "backend_used": True,
@@ -580,48 +583,89 @@ def main(page: ft.Page):
         # Clear summaries controls for new content
         summaries_controls.clear()
 
-        # TL;DR card
+        # TL;DR card with source reference
         tldr_text = ft.Text(
             data["summaries"]["tldr"],
             font_family="lexend",
             size=font_size_slider.value,
             color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
         )
-        tldr_card = create_card(
-            ft.Column([
-                create_section_header("TL;DR", "📌"),
-                ft.Container(height=15),
-                tldr_text
-            ])
-        )
+        
+        tldr_container = ft.Column([
+            create_section_header("TL;DR", "📌"),
+            ft.Container(height=15),
+            tldr_text
+        ])
+        
+        # Add source reference if available
+        if "sources" in data["summaries"] and data["summaries"]["sources"].get("tldr"):
+            source_ref = ft.Text(
+                f"Source: {data['summaries']['sources']['tldr']}",
+                font_family="lexend",
+                size=12,
+                italic=True,
+                color="#1976D2"
+            )
+            tldr_container.controls.append(ft.Container(height=8))
+            tldr_container.controls.append(source_ref)
+        
+        tldr_card = create_card(tldr_container)
         main_container.controls.append(tldr_card)
         summaries_controls.append(tldr_text)
 
-        # Key points card
+        # Key points card with source references
         bullet_controls = []
         bullet_column = ft.Column([], spacing=12)
         
         for i, point in enumerate(data["summaries"]["bullets"], 1):
-            bullet = ft.Row([
-                ft.Container(
-                    ft.CircleAvatar(
-                        content=ft.Text(str(i), size=12, weight="bold", color="#FFFFFF"),
-                        bgcolor="#1976D2" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFB300",
-                        radius=12
+            # Create point text with source reference if available
+            point_text = point
+            source_ref = None
+            if "sources" in data["summaries"] and data["summaries"]["sources"].get("bullets"):
+                bullet_sources = data["summaries"]["sources"]["bullets"]
+                if isinstance(bullet_sources, list) and len(bullet_sources) >= i:
+                    source_ref = bullet_sources[i-1]
+            
+            bullet_content = ft.Column([
+                ft.Row([
+                    ft.Container(
+                        ft.CircleAvatar(
+                            content=ft.Text(str(i), size=12, weight="bold", color="#FFFFFF"),
+                            bgcolor="#1976D2" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFB300",
+                            radius=12
+                        )
+                    ),
+                    ft.Container(width=10),
+                    ft.Text(
+                        point_text,
+                        font_family="lexend",
+                        size=font_size_slider.value,
+                        expand=True,
+                        color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
                     )
-                ),
-                ft.Container(width=10),
-                ft.Text(
-                    point,
-                    font_family="lexend",
-                    size=font_size_slider.value,
-                    expand=True,
-                    color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
-                )
+                ])
             ])
-            bullet_column.controls.append(bullet)
-            bullet_controls.append(bullet.controls[2])  # The text component
-            summaries_controls.append(bullet.controls[2])
+            
+            # Add source reference if available
+            if source_ref:
+                bullet_content.controls.append(
+                    ft.Container(
+                        content=ft.Text(
+                            f"Source: {source_ref}",
+                            font_family="lexend",
+                            size=11,
+                            italic=True,
+                            color="#1976D2"
+                        ),
+                        margin=ft.margin.only(left=34, top=2)
+                    )
+                )
+            
+            bullet_column.controls.append(bullet_content)
+            # Find the text component to add to controls
+            text_component = bullet_content.controls[0].controls[2]
+            bullet_controls.append(text_component)
+            summaries_controls.append(text_component)
 
         key_points_card = create_card(
             ft.Column([
@@ -633,14 +677,40 @@ def main(page: ft.Page):
         main_container.controls.append(key_points_card)
 
         # Full summary card (collapsible) with TTS controls positioned to the right
-        paragraph_text = ft.Text(
-            data["summaries"]["paragraph"],
-            font_family="lexend",
-            size=font_size_slider.value,
-            visible=False,
-            ref=paragraph_visible,
-            color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
-        )
+        # Create full summary text with source references
+        summary_container = ft.Column([
+            ft.Text(
+                data["summaries"]["paragraph"],
+                font_family="lexend",
+                size=font_size_slider.value,
+                visible=False,
+                ref=paragraph_visible,
+                color="#2E2E2E" if page.theme_mode == ft.ThemeMode.LIGHT else "#FFECB3"
+            )
+        ])
+
+        # Add source references if available
+        if "sources" in data["summaries"] and data["summaries"]["sources"].get("paragraph"):
+            sources = data["summaries"]["sources"]["paragraph"]
+            if isinstance(sources, (list, str)):
+                source_text = (
+                    f"Sources: {sources}" if isinstance(sources, str)
+                    else f"Sources: {', '.join(sources)}"
+                )
+                source_ref = ft.Container(
+                    content=ft.Text(
+                        source_text,
+                        font_family="lexend",
+                        size=12,
+                        italic=True,
+                        color="#1976D2",
+                        visible=False  # Initially hidden like the paragraph
+                    ),
+                    margin=ft.margin.only(top=10)
+                )
+                summary_container.controls.append(source_ref)
+        
+        paragraph_text = summary_container
         
         toggle_button = ft.ElevatedButton(
             "Show Full Summary",

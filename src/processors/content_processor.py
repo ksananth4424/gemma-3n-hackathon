@@ -1,9 +1,5 @@
 """
-Main Content Processor         # Lazy loading of processors to avoid circular dependencies
-        self._pdf_processor = None
-        self._video_processor = None
-        self._audio_processor = None
-        self._text_processor = Nonechestrates all content processing with DI
+Main Content Processor - Orchestrates all content processing with DI
 """
 
 import logging
@@ -14,6 +10,7 @@ from typing import Dict, Any, Optional
 
 from ..utils.dependency_injection import singleton, injectable
 from ..utils.config_manager import ConfigManager
+from ..utils.document_analyzer import DocumentAnalyzer
 from ..service.ollama_service import OllamaService, ContentType
 
 logger = logging.getLogger('accessibility_assistant.content_processor')
@@ -29,6 +26,7 @@ class ContentProcessor:
     def __init__(self, config_manager: ConfigManager, ollama_service: OllamaService):
         self.config = config_manager
         self.ollama_service = ollama_service
+        self.document_analyzer = DocumentAnalyzer()
         
         # Lazy loading of processors to avoid circular dependencies
         self._pdf_processor = None
@@ -129,9 +127,12 @@ class ContentProcessor:
             
             logger.debug(f"Extracted {len(extracted_content)} characters of content")
             
-            # Generate AI summary
+            # Analyze document structure for intelligent source referencing
+            enhanced_content = self._enhance_content_with_structure(extracted_content, content_type)
+            
+            # Generate AI summary with enhanced content
             summary_result = self.ollama_service.generate_summary(
-                extracted_content, content_type
+                enhanced_content, content_type
             )
             
             # Create successful result with structured summaries
@@ -220,3 +221,23 @@ class ContentProcessor:
         """Check if file type is supported"""
         file_extension = Path(file_path).suffix.lower()
         return file_extension in self.processor_mapping
+    
+    def _enhance_content_with_structure(self, content: str, content_type: ContentType) -> str:
+        """Enhance content with structural analysis for better source referencing"""
+        try:
+            # Only analyze structure for text and PDF content
+            if content_type in [ContentType.TEXT, ContentType.PDF]:
+                analysis = self.document_analyzer.analyze_document(content)
+                enhanced_content = analysis.get('enhanced_content', content)
+                
+                logger.debug(f"Document analysis: Found {len(analysis.get('sections', []))} sections, "
+                           f"Academic structure: {analysis.get('has_academic_structure', False)}")
+                
+                return enhanced_content
+            else:
+                # For video/audio content, just add basic paragraph markers
+                return self.document_analyzer._add_paragraph_markers(content)
+                
+        except Exception as e:
+            logger.warning(f"Content enhancement failed: {e}, using original content")
+            return content

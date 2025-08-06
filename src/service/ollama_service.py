@@ -6,6 +6,7 @@ Handles model selection, initialization, and inference
 import ollama
 import logging
 import time
+import re
 from typing import Dict, Any, Optional, List
 from enum import Enum
 from dataclasses import dataclass
@@ -189,22 +190,25 @@ class OllamaService(OllamaServiceInterface):
             Best model name for the task
         """
         with self._model_lock:
-            # Define model selection rules - use base models for now
+            # Define model selection rules - prioritize custom models with source references
             if content_type in [ContentType.VIDEO, ContentType.AUDIO]:
                 # Use larger model for complex audio/video content
-                preferred_models = ['gemma3n:e4b', 'accessibility-e4b']
+                preferred_models = ['accessibility-e4b', 'gemma3n:e4b']
             elif content_type == ContentType.PDF and content_length > 10000:
                 # Use larger model for long PDFs
-                preferred_models = ['gemma3n:e4b', 'accessibility-e4b']
+                preferred_models = ['accessibility-e4b', 'gemma3n:e4b']
             else:
                 # Use smaller, faster model for text and short content
-                preferred_models = ['gemma3n:e2b', 'accessibility-e2b']
+                preferred_models = ['accessibility-e2b', 'gemma3n:e2b']
             
             # Find first available model from preferred list
             for model_name in preferred_models:
-                if model_name in self._models_cache:
-                    logger.debug(f"Selected model {model_name} for {content_type.value}")
-                    return model_name
+                # Check both with and without :latest suffix
+                available_names = [model_name, f"{model_name}:latest"]
+                for name in available_names:
+                    if name in self._models_cache:
+                        logger.debug(f"Selected model {name} for {content_type.value}")
+                        return name
             
             # Fallback to any available model
             available_models = list(self._models_cache.keys())
@@ -314,80 +318,292 @@ class OllamaService(OllamaServiceInterface):
         
         return f"{content_prompt}\n\n{base_prompt}\n\nContent to analyze:\n{content}"
     
-    def _parse_structured_summary(self, raw_summary: str) -> Dict[str, str]:
-        """Parse AI response into structured sections for UI"""
-        import re
+    def _parse_structured_summary(self, raw_summary: str) -> Dict[str, Any]:
+        """Parse structured summary with robust error handling and source extraction"""
+        logger.debug(f"Raw summary to parse: {raw_summary}")
         
         result = {
             'tldr': '',
             'bullets': [],
-            'paragraph': ''
+            'paragraph': '',
+            'sources': {
+                'tldr': '',
+                'bullets': [],
+                'paragraph': []
+            }
         }
         
         try:
-            # Extract TL;DR section
-            tldr_match = re.search(r'\*\*TL;DR:\*\*\s*(.*?)(?=\*\*|$)', raw_summary, re.DOTALL | re.IGNORECASE)
-            if tldr_match:
-                result['tldr'] = tldr_match.group(1).strip()
+            # Clean up the input text - remove artifacts and normalize whitespace
+            cleaned_summary = self._clean_raw_text(raw_summary)
+            logger.debug(f"Cleaned summary: {cleaned_summary}")
             
-            # Extract KEY POINTS section
-            bullets_match = re.search(r'\*\*KEY POINTS:\*\*\s*(.*?)(?=\*\*|$)', raw_summary, re.DOTALL | re.IGNORECASE)
-            if bullets_match:
-                bullets_text = bullets_match.group(1).strip()
-                # Extract bullet points
-                bullet_lines = re.findall(r'[•\-\*]\s*(.+)', bullets_text)
-                result['bullets'] = [bullet.strip() for bullet in bullet_lines if bullet.strip()]
+            # Parse each section using robust extraction methods
+            self._extract_tldr_section(cleaned_summary, result)
+            self._extract_bullets_section(cleaned_summary, result)
+            self._extract_paragraph_section(cleaned_summary, result)
             
-            # Extract FULL SUMMARY section with better handling
-            full_match = re.search(r'\*\*FULL SUMMARY:\*\*\s*(.*?)(?=\*\*|$)', raw_summary, re.DOTALL | re.IGNORECASE)
-            if full_match:
-                paragraph = full_match.group(1).strip()
-                
-                # If paragraph seems incomplete (doesn't end with proper punctuation), try to complete it
-                if paragraph and not paragraph[-1] in '.!?':
-                    # Look for the last complete sentence
-                    sentences = re.split(r'[.!?]+', paragraph)
-                    if len(sentences) > 1:
-                        # Use all complete sentences
-                        complete_sentences = [s.strip() for s in sentences[:-1] if s.strip()]
-                        if complete_sentences:
-                            paragraph = '. '.join(complete_sentences) + '.'
-                        else:
-                            paragraph = paragraph + '.'
-                    else:
-                        paragraph = paragraph + '.'
-                
-                result['paragraph'] = paragraph
-            
-            # Enhanced fallback: if parsing fails, try to extract any useful content
+            # If parsing completely fails, use intelligent fallback
             if not any([result['tldr'], result['bullets'], result['paragraph']]):
-                # Split raw summary into sentences and use them intelligently
-                sentences = re.split(r'[.!?]+', raw_summary)
-                clean_sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
-                
-                if clean_sentences:
-                    result['tldr'] = clean_sentences[0] + '.'
-                    result['bullets'] = clean_sentences[1:4] if len(clean_sentences) > 1 else ["Content processed successfully"]
-                    result['paragraph'] = '. '.join(clean_sentences[:3]) + '.' if len(clean_sentences) >= 3 else raw_summary
-                else:
-                    result['tldr'] = "Summary generated successfully"
-                    result['bullets'] = ["Content processed"]
-                    result['paragraph'] = raw_summary
-                
+                logger.warning("Primary parsing failed, using intelligent fallback")
+                self._apply_intelligent_fallback(raw_summary, result)
+            
+            logger.debug(f"Final parsed result: {result}")
+            
         except Exception as e:
             logger.warning(f"Failed to parse structured summary: {e}")
-            # More robust fallback parsing
-            lines = [line.strip() for line in raw_summary.split('\n') if line.strip()]
-            if lines:
-                result['tldr'] = lines[0]
-                result['bullets'] = lines[1:4] if len(lines) > 1 else ["Processing completed"]
-                result['paragraph'] = ' '.join(lines) if len(lines) > 1 else raw_summary
-            else:
-                result['tldr'] = "Summary not available"
-                result['bullets'] = ["Processing completed"]
-                result['paragraph'] = raw_summary
+            self._apply_emergency_fallback(raw_summary, result)
         
         return result
+
+    def _clean_raw_text(self, text: str) -> str:
+        """Clean and normalize raw text"""
+        # Remove termination tokens
+        text = re.sub(r'<\|[^|]*\|>', '', text)
+        # Remove duplicate newlines
+        text = re.sub(r'\n\s*\n+', '\n\n', text)
+        # Remove markdown headers at start of lines
+        text = re.sub(r'^#+\s+.*?\n', '', text, flags=re.MULTILINE)
+        return text.strip()
+
+    def _extract_source_from_text(self, text: str) -> tuple[str, str]:
+        """Extract source reference from text, return (cleaned_text, source)"""
+        # Look for sources in parentheses or brackets
+        source_match = re.search(r'\(([^)]+)\)|\[([^\]]+)\]', text)
+        if source_match:
+            source = (source_match.group(1) or source_match.group(2)).strip()
+            # Remove source from text
+            cleaned_text = re.sub(r'\s*\([^)]+\)|\s*\[[^\]]+\]', '', text).strip()
+            # Clean up source - remove prefixes
+            source = re.sub(r'^(?:Source|Ref|From):\s*', '', source, flags=re.IGNORECASE)
+            return cleaned_text, source.strip()
+        return text, ""
+
+    def _extract_tldr_section(self, text: str, result: dict):
+        """Extract TL;DR section with flexible pattern matching"""
+        # Try multiple patterns for TL;DR
+        patterns = [
+            r'(?:\*\*)?TL;DR:?\*?\*?\s*(.*?)(?=(?:\*\*)?(?:BULLETS?|KEY POINTS?|FULL SUMMARY|PARAGRAPH):?|\*\*|$)',
+            r'(?:\*\*)?TLDR:?\*?\*?\s*(.*?)(?=(?:\*\*)?(?:BULLETS?|KEY POINTS?|FULL SUMMARY|PARAGRAPH):?|\*\*|$)',
+            r'(?:\*\*)?Summary:?\*?\*?\s*(.*?)(?=(?:\*\*)?(?:BULLETS?|KEY POINTS?|FULL SUMMARY|PARAGRAPH):?|\*\*|$)'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            if match:
+                tldr_text = match.group(1).strip()
+                if tldr_text:
+                    # Clean and extract source
+                    cleaned_tldr, source = self._extract_source_from_text(tldr_text)
+                    
+                    # Clean up markdown formatting
+                    cleaned_tldr = re.sub(r'\*\*([^*]+)\*\*', r'\1', cleaned_tldr)
+                    cleaned_tldr = cleaned_tldr.strip()
+                    
+                    if cleaned_tldr:
+                        result['tldr'] = cleaned_tldr
+                        result['sources']['tldr'] = source if source else "Title"
+                        logger.debug(f"Extracted TL;DR: {cleaned_tldr} with source: {result['sources']['tldr']}")
+                        return
+
+    def _extract_bullets_section(self, text: str, result: dict):
+        """Extract bullets section with robust parsing"""
+        # Try to find bullets section with multiple patterns
+        patterns = [
+            r'(?:\*\*)?(?:BULLETS?|KEY POINTS?):?\*?\*?\s*(.*?)(?=(?:\*\*)?(?:FULL SUMMARY|PARAGRAPH|SOURCES?):?|\*\*|$)',
+            r'(?:\*\*)?(?:POINTS?|HIGHLIGHTS?):?\*?\*?\s*(.*?)(?=(?:\*\*)?(?:FULL SUMMARY|PARAGRAPH|SOURCES?):?|\*\*|$)'
+        ]
+        
+        for pattern in patterns:
+            bullets_match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            if bullets_match:
+                bullets_text = bullets_match.group(1).strip()
+                if bullets_text:
+                    cleaned_bullets, bullet_sources = self._parse_bullet_list(bullets_text)
+                    if cleaned_bullets:  # Only set if we found valid bullets
+                        result['bullets'] = cleaned_bullets
+                        result['sources']['bullets'] = bullet_sources
+                        logger.debug(f"Extracted {len(cleaned_bullets)} bullets")
+                        return
+
+    def _parse_bullet_list(self, bullets_text: str) -> tuple[list, list]:
+        """Parse bullet list text into bullets and sources"""
+        cleaned_bullets = []
+        bullet_sources = []
+        
+        # Split into lines and process each potential bullet
+        lines = bullets_text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Check for bullet markers (•, -, *, or numbers)
+            bullet_match = re.match(r'^(?:[•\-\*]|\d+\.)\s*(.+)', line)
+            if bullet_match:
+                bullet_content = bullet_match.group(1).strip()
+                
+                # Extract source and clean text
+                cleaned_text, source = self._extract_source_from_text(bullet_content)
+                
+                # Clean up markdown formatting
+                cleaned_text = re.sub(r'\*\*([^*]+)\*\*:\s*', r'\1: ', cleaned_text)
+                cleaned_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', cleaned_text)
+                
+                # Handle source defaults
+                if not source:
+                    para_num = len(cleaned_bullets) + 1
+                    source = f"Para {para_num}"
+                elif source.lower() in ['source', 'sources']:
+                    # Look for section markers or use paragraph number
+                    section_markers = re.findall(r'\[SOURCE_MARKER:\s*([^]]+)\]', bullet_content)
+                    if section_markers:
+                        source = section_markers[-1].strip()
+                    else:
+                        para_num = len(cleaned_bullets) + 1
+                        source = f"Para {para_num}"
+                
+                # Only add if bullet has meaningful content
+                if cleaned_text and len(cleaned_text) > 5:
+                    cleaned_bullets.append(cleaned_text)
+                    bullet_sources.append(source)
+        
+        return cleaned_bullets, bullet_sources
+
+    def _extract_paragraph_section(self, text: str, result: dict):
+        """Extract paragraph section with flexible pattern matching"""
+        # Try multiple patterns for paragraph section
+        patterns = [
+            r'(?:\*\*)?(?:FULL SUMMARY|PARAGRAPH):?\*?\*?\s*(.*?)(?=(?:\*\*)?SOURCES?:?|\*\*|$)',
+            r'(?:\*\*)?(?:SUMMARY|DETAILS):?\*?\*?\s*(.*?)(?=(?:\*\*)?SOURCES?:?|\*\*|$)'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            if match:
+                paragraph_text = match.group(1).strip()
+                if paragraph_text:
+                    # Clean up the paragraph
+                    paragraph_text = self._clean_paragraph_text(paragraph_text)
+                    
+                    if paragraph_text:
+                        result['paragraph'] = paragraph_text
+                        
+                        # Extract paragraph sources if available
+                        sources = self._extract_paragraph_sources(text)
+                        result['sources']['paragraph'] = sources
+                        logger.debug(f"Extracted paragraph with {len(sources)} sources")
+                        return
+
+    def _clean_paragraph_text(self, text: str) -> str:
+        """Clean and format paragraph text"""
+        # Remove artifacts and clean formatting
+        text = re.sub(r'<\|[^|]*\|>', '', text)
+        text = text.strip()
+        
+        # Ensure proper sentence ending
+        if text and text[-1] not in '.!?':
+            # Look for last complete sentence
+            sentences = re.split(r'[.!?]+', text)
+            if len(sentences) > 1:
+                complete_sentences = [s.strip() for s in sentences[:-1] if s.strip()]
+                if complete_sentences:
+                    text = '. '.join(complete_sentences) + '.'
+                else:
+                    text = text + '.'
+            else:
+                text = text + '.'
+        
+        return text
+
+    def _extract_paragraph_sources(self, text: str) -> list:
+        """Extract sources from paragraph sources section"""
+        sources_match = re.search(r'\*\*SOURCES?:\*\*\s*(.*?)(?=\*\*|$)', text, re.DOTALL | re.IGNORECASE)
+        if not sources_match:
+            return []
+        
+        sources_text = sources_match.group(1).strip()
+        sources_text = re.sub(r'<\|[^|]*\|>', '', sources_text).strip()
+        
+        if not sources_text:
+            return []
+        
+        # Try different source extraction methods
+        sources_list = []
+        
+        # Method 1: Bracketed sources [XX:XX:XX] or (Para X)
+        bracketed_sources = re.findall(r'\[([^\]]+)\]|\(([^)]+)\)', sources_text)
+        if bracketed_sources:
+            sources_list = [s[0] or s[1] for s in bracketed_sources if s[0] or s[1]]
+        
+        # Method 2: Bullet list format
+        elif re.search(r'(?:^|\n)\s*(?:[•\-\*]|\d+\.)', sources_text, re.MULTILINE):
+            bullet_sources = re.findall(r'(?:^|\n)\s*(?:[•\-\*]|\d+\.)\s*([^\n]+)', sources_text, re.MULTILINE)
+            sources_list = [s.strip() for s in bullet_sources if s.strip()]
+        
+        # Method 3: Comma/semicolon separated
+        else:
+            sources_list = [s.strip() for s in re.split(r'[,;]|\sand\s', sources_text) if s.strip()]
+        
+        # Clean up sources
+        cleaned_sources = []
+        for source in sources_list:
+            source = re.sub(r'<\|[^|]*\|>', '', source).strip()
+            if source and len(source) > 1:
+                cleaned_sources.append(source)
+        
+        return cleaned_sources
+
+    def _apply_intelligent_fallback(self, raw_summary: str, result: dict):
+        """Apply intelligent fallback parsing when structured parsing fails"""
+        # Clean the raw text
+        clean_text = self._clean_raw_text(raw_summary)
+        
+        # Split into sentences
+        sentences = re.split(r'[.!?]+', clean_text)
+        clean_sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
+        
+        if clean_sentences:
+            # Use first sentence as TL;DR
+            result['tldr'] = clean_sentences[0] + '.'
+            result['sources']['tldr'] = "Title"
+            
+            # Use next sentences as bullets
+            if len(clean_sentences) > 1:
+                result['bullets'] = [s + '.' for s in clean_sentences[1:4]]
+                result['sources']['bullets'] = [f"Para {i+1}" for i in range(len(result['bullets']))]
+            else:
+                result['bullets'] = ["Content processed successfully"]
+                result['sources']['bullets'] = ["Para 1"]
+            
+            # Use combined sentences as paragraph
+            if len(clean_sentences) >= 3:
+                result['paragraph'] = '. '.join(clean_sentences[:3]) + '.'
+            else:
+                result['paragraph'] = clean_text
+            result['sources']['paragraph'] = ["Para 1"]
+        else:
+            # Last resort fallback
+            self._apply_emergency_fallback(raw_summary, result)
+
+    def _apply_emergency_fallback(self, raw_summary: str, result: dict):
+        """Emergency fallback when all else fails"""
+        lines = [line.strip() for line in raw_summary.split('\n') if line.strip()]
+        
+        if lines:
+            result['tldr'] = lines[0] if lines[0] else "Summary generated"
+            result['bullets'] = lines[1:4] if len(lines) > 1 else ["Processing completed"]
+            result['paragraph'] = ' '.join(lines) if len(lines) > 1 else raw_summary
+        else:
+            result['tldr'] = "Summary not available"
+            result['bullets'] = ["Processing completed"]
+            result['paragraph'] = raw_summary or "No content available"
+        
+        # Set default sources
+        result['sources']['tldr'] = "Title"
+        result['sources']['bullets'] = [f"Para {i+1}" for i in range(len(result['bullets']))]
+        result['sources']['paragraph'] = ["Para 1"]
     
     def _create_fallback_summary(self, content: str) -> Dict[str, str]:
         """Create fallback summary when AI processing fails"""
